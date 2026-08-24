@@ -118,14 +118,14 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("##### Состав композиции (мас. ч.)")
-    component_a = st.number_input("Компонент A", min_value=0.0, max_value=200.0, value=33.0, step=1.0)
-    component_b = st.number_input("Компонент B", min_value=0.0, max_value=200.0, value=42.0, step=1.0)
-    component_c = st.number_input("Компонент C", min_value=0.0, max_value=200.0, value=17.0, step=1.0)
+    component_a = st.number_input("Компонент A", min_value=0.0, max_value=200.0, value=0.0, step=1.0)
+    component_b = st.number_input("Компонент B", min_value=0.0, max_value=200.0, value=0.0, step=1.0)
+    component_c = st.number_input("Компонент C", min_value=0.0, max_value=200.0, value=0.0, step=1.0)
 
 with col2:
     st.markdown("##### Режим вулканизации")
-    temperature = st.number_input("Температура, °C", min_value=100, max_value=250, value=170, step=1)
-    time = st.number_input("Продолжительность, мин", min_value=1, max_value=120, value=30, step=1)
+    temperature = st.number_input("Температура, °C", min_value=0, max_value=250, value=0, step=1)
+    time = st.number_input("Продолжительность, мин", min_value=0, max_value=180, value=0, step=1)
 
 st.markdown("---")
 
@@ -158,14 +158,14 @@ if st.button("Выполнить расчёт", type="primary"):
         if 'elongation_initial' in results and results['elongation_initial'] is not None:
             st.metric("Относительное удлинение", f"{results['elongation_initial']:.1f} %")
     
-    st.caption("Прогноз получен на основе модели CatBoost")
+    st.caption("Прогноз получен на основе модели Podlesskiy")
 
 # ============================================================
 #  ПОДВАЛ
 # ============================================================
 st.markdown("""
 <div class="footer">
-    <span>Версия 2.0 &bull; Алгоритм: CatBoost &bull; 
+    <span>Версия 1.0.1 &bull; Алгоритм: CatBoost &bull; 
     <a href="#" style="color: #999; text-decoration: none;">Документация</a></span>
 </div>
 """, unsafe_allow_html=True)
