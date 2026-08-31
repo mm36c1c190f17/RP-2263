@@ -99,12 +99,12 @@ st.markdown("""
         color: #4a5568;
     }
     
-    /* Улучшенные вкладки - шире и с отступами */
+    /* Улучшенные вкладки - широкие и с отступами */
     .stTabs {
         background: rgba(255, 255, 255, 0.3);
         backdrop-filter: blur(10px);
         border-radius: 16px;
-        padding: 8px 12px;
+        padding: 10px 16px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         border: 1px solid rgba(255, 255, 255, 0.5);
         margin-bottom: 1rem;
@@ -112,19 +112,19 @@ st.markdown("""
     }
     
     .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
+        gap: 8px;
         background: transparent;
-        border-radius: 12px;
-        padding: 4px;
+        border-radius: 14px;
+        padding: 6px;
         display: flex;
         flex-wrap: nowrap;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 12px;
-        padding: 12px 48px !important;
+        border-radius: 14px;
+        padding: 14px 64px !important;
         font-weight: 500;
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         color: #4a5568;
         transition: all 0.3s ease;
         background: transparent;
@@ -134,10 +134,11 @@ st.markdown("""
         flex: 1 1 auto;
         text-align: center;
         white-space: nowrap;
+        letter-spacing: 0.3px;
     }
     
     .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.6);
         color: #2d3748;
     }
     
@@ -145,7 +146,8 @@ st.markdown("""
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: #ffffff !important;
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        border-radius: 12px;
+        border-radius: 14px;
+        padding: 14px 64px !important;
     }
     
     .stTabs [data-baseweb="tab-highlight"] {
@@ -156,9 +158,9 @@ st.markdown("""
     }
     
     .stTabs [role="tabpanel"] {
-        padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+        padding: 0.8rem 0.8rem 0.8rem 0.8rem;
         background: rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
+        border-radius: 14px;
         margin-top: 0.5rem;
     }
     
