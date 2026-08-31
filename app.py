@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from catboost import CatBoostRegressor
 import joblib
 from pathlib import Path
+from scipy.interpolate import interp1d
 
 st.set_page_config(
     page_title="Прогнозирование свойств эластомерных материалов",
@@ -24,29 +24,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("Прогнозирование свойств эластомерных материалов")
-st.caption("Система прогнозирования на основе машинного обучения")
+st.caption("Система прогнозирования на основе интерполяции экспериментальных данных")
 
 @st.cache_resource
-def load_model():
+def load_interpolator():
     try:
-        model = CatBoostRegressor()
-        model.load_model('models/catboost_predictor.cbm')
-        feature_names = joblib.load('models/feature_names.pkl')
-        cat_features = joblib.load('models/cat_features.pkl')
+        interpolators = joblib.load('models/interpolators.pkl')
         df = pd.read_csv('data/raw/experimental_data.csv')
-        return model, feature_names, cat_features, df
+        return interpolators, df
     except Exception as e:
-        st.error(f"Ошибка загрузки модели: {e}")
-        return None, None, None, None
+        st.error(f"Ошибка загрузки: {e}")
+        return None, None
 
-model, feature_names, cat_features, data_df = load_model()
+interpolators, data_df = load_interpolator()
 
-if model is None:
-    st.warning("Модель не загружена")
+if interpolators is None:
+    st.warning("Интерполятор не загружен")
     st.stop()
 
 st.sidebar.markdown("### Управление")
-st.sidebar.write(f"**Записей для обучения:** {len(data_df)}")
+st.sidebar.write(f"**Записей в базе:** {len(data_df)}")
 st.sidebar.write(f"**Наполнителей:** {len(data_df['filler_type'].unique())}")
 
 tab1, tab2 = st.tabs(["Прогнозирование", "Данные"])
@@ -71,28 +68,35 @@ with tab1:
         if st.button("Рассчитать свойства", use_container_width=True):
             with st.spinner("Выполняется расчет..."):
                 try:
-                    input_data = pd.DataFrame([{
-                        'base_type': 'VMQ',
-                        'base_manufacturer': 'Xiameter',
-                        'filler_type': filler_type,
-                        'filler_manufacturer': 'JSC_Vostochnye_Ogneupory',
-                        'silane_type': 'A-1120' if silane_content > 0 else '0',
-                        'base_hardness': 70,
-                        'filler_content': filler_content,
-                        'silane_content': silane_content,
-                        'temp': 115,
-                        'time': 15
-                    }])
-                    
-                    input_data = input_data[feature_names]
-                    pred = model.predict(input_data)[0]
-                    
-                    st.success("✅ Расчет выполнен")
-                    st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
-                    
-                    # Дополнительная информация
-                    st.caption(f"Модель обучена на {len(data_df)} экспериментальных образцах")
-                    
+                    if filler_type not in interpolators:
+                        st.error(f"Нет данных для наполнителя {filler_type}")
+                    else:
+                        points = interpolators[filler_type]['points']
+                        
+                        # Находим точки с таким же силаном
+                        same_silane = [p for p in points if p['silane'] == silane_content]
+                        
+                        if len(same_silane) >= 2:
+                            x = [p['content'] for p in same_silane]
+                            y = [p['ceramic_strength'] for p in same_silane]
+                            interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                            pred = float(interp(filler_content))
+                            st.success("✅ Расчет выполнен (интерполяция)")
+                        else:
+                            # Используем все точки
+                            x = [p['content'] for p in points]
+                            y = [p['ceramic_strength'] for p in points]
+                            interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                            pred = float(interp(filler_content))
+                            st.success("✅ Расчет выполнен (экстраполяция)")
+                        
+                        st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
+                        
+                        # Показываем использованные точки
+                        st.caption("Использованные экспериментальные точки:")
+                        for p in points:
+                            st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['ceramic_strength']:.1f} Н/м²")
+                        
                 except Exception as e:
                     st.error(f"Ошибка расчета: {e}")
 
@@ -102,6 +106,6 @@ with tab2:
 
 st.markdown("""
 <div class="footer">
-    Система прогнозирования свойств эластомерных материалов &bull; Алгоритм: CatBoost
+    Система прогнозирования свойств эластомерных материалов &bull; Алгоритм: интерполяция
 </div>
 """, unsafe_allow_html=True)
