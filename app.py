@@ -180,34 +180,41 @@ st.markdown("""
         border-color: #667eea !important;
     }
     
-    /* Улучшенные вкладки */
+    /* Улучшенные вкладки - шире и с отступами */
     .stTabs {
-        background: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.3);
         backdrop-filter: blur(10px);
         border-radius: 16px;
-        padding: 8px;
+        padding: 8px 12px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         border: 1px solid rgba(255, 255, 255, 0.5);
         margin-bottom: 1rem;
+        width: 100%;
     }
     
     .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
+        gap: 6px;
         background: transparent;
         border-radius: 12px;
         padding: 4px;
+        display: flex;
+        flex-wrap: nowrap;
     }
     
     .stTabs [data-baseweb="tab"] {
         border-radius: 12px;
-        padding: 12px 32px;
+        padding: 12px 48px !important;
         font-weight: 500;
-        font-size: 1rem;
+        font-size: 1.05rem;
         color: #4a5568;
         transition: all 0.3s ease;
         background: transparent;
         border: none;
         margin: 0;
+        min-width: 0;
+        flex: 1 1 auto;
+        text-align: center;
+        white-space: nowrap;
     }
     
     .stTabs [data-baseweb="tab"]:hover {
@@ -232,10 +239,9 @@ st.markdown("""
     
     .stTabs [role="tabpanel"] {
         padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-        background: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 12px;
         margin-top: 0.5rem;
-        backdrop-filter: blur(5px);
     }
 </style>
 """, unsafe_allow_html=True)
