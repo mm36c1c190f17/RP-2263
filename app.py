@@ -4,6 +4,9 @@ import numpy as np
 import joblib
 from pathlib import Path
 from scipy.interpolate import interp1d
+import base64
+from PIL import Image
+import os
 
 st.set_page_config(
     page_title="Прогнозирование свойств эластомерных материалов",
@@ -11,19 +14,97 @@ st.set_page_config(
     layout="wide"
 )
 
+# Функция для загрузки изображения в base64
+def get_image_base64(image_path):
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except:
+        return None
+
+# Загружаем логотип
+logo_base64 = get_image_base64("static/logo.png")
+
 st.markdown("""
 <style>
     .main { background-color: #f8f9fa; }
-    h1 { font-weight: 300; font-size: 2rem; color: #1a1a2e; border-bottom: 3px solid #4361ee; padding-bottom: 0.5rem; }
-    .stButton > button { background-color: #4361ee; color: #ffffff; border: none; border-radius: 4px; padding: 0.6rem 2rem; font-weight: 500; width: 100%; }
-    .stButton > button:hover { background-color: #3a56d4; box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); }
-    [data-testid="metric-container"] { background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border: 1px solid #e9ecef; border-radius: 8px; padding: 1.2rem 0.5rem; }
-    .footer { margin-top: 3rem; padding-top: 1rem; border-top: 2px solid #4361ee; font-size: 0.75rem; color: #6c757d; text-align: center; }
-    .section-header { color: #1a1a2e; font-weight: 500; font-size: 1.3rem; border-bottom: 2px solid #4361ee; padding-bottom: 0.3rem; margin-bottom: 1.5rem; }
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 3px solid #4361ee;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .header-title {
+        font-weight: 300;
+        font-size: 2rem;
+        color: #1a1a2e;
+        margin: 0;
+        flex: 1;
+    }
+    .header-logo {
+        height: 50px;
+        width: auto;
+        margin-left: 20px;
+    }
+    .stButton > button { 
+        background-color: #4361ee; 
+        color: #ffffff; 
+        border: none; 
+        border-radius: 4px; 
+        padding: 0.6rem 2rem; 
+        font-weight: 500; 
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .stButton > button:hover { 
+        background-color: #3a56d4; 
+        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); 
+    }
+    [data-testid="metric-container"] { 
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); 
+        border: 1px solid #e9ecef; 
+        border-radius: 8px; 
+        padding: 1.2rem 0.5rem; 
+    }
+    .footer { 
+        margin-top: 3rem; 
+        padding-top: 1rem; 
+        border-top: 2px solid #4361ee; 
+        font-size: 0.75rem; 
+        color: #6c757d; 
+        text-align: center; 
+    }
+    .section-header { 
+        color: #1a1a2e; 
+        font-weight: 500; 
+        font-size: 1.3rem; 
+        border-bottom: 2px solid #4361ee; 
+        padding-bottom: 0.3rem; 
+        margin-bottom: 1.5rem; 
+    }
+    .btn-logo {
+        height: 20px;
+        width: auto;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Прогнозирование свойств эластомерных материалов")
+# Заголовок с логотипом
+if logo_base64:
+    st.markdown(f"""
+    <div class="header-container">
+        <h1 class="header-title">Прогнозирование свойств эластомерных материалов</h1>
+        <img src="data:image/png;base64,{logo_base64}" class="header-logo" />
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.title("Прогнозирование свойств эластомерных материалов")
+
 st.caption("Система прогнозирования на основе интерполяции экспериментальных данных")
 
 @st.cache_resource
@@ -65,15 +146,46 @@ with tab1:
         st.info(f"**Наполнитель:** {filler_type} ({filler_content} phr)")
         st.info(f"**Силан:** {silane_content} phr")
         
-        if st.button("Рассчитать свойства", use_container_width=True):
-            with st.spinner("Выполняется расчет..."):
+        # Кнопка с логотипом
+        if logo_base64:
+            # Используем HTML для кнопки с логотипом
+            if st.button("Рассчитать свойства", use_container_width=True):
+                with st.spinner("Выполняется расчет..."):
+                    try:
+                        if filler_type not in interpolators:
+                            st.error(f"Нет данных для наполнителя {filler_type}")
+                        else:
+                            points = interpolators[filler_type]['points']
+                            same_silane = [p for p in points if p['silane'] == silane_content]
+                            
+                            if len(same_silane) >= 2:
+                                x = [p['content'] for p in same_silane]
+                                y = [p['ceramic_strength'] for p in same_silane]
+                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                                pred = float(interp(filler_content))
+                                st.success("✅ Расчет выполнен (интерполяция)")
+                            else:
+                                x = [p['content'] for p in points]
+                                y = [p['ceramic_strength'] for p in points]
+                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                                pred = float(interp(filler_content))
+                                st.success("✅ Расчет выполнен (экстраполяция)")
+                            
+                            st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
+                            
+                            st.caption("Использованные экспериментальные точки:")
+                            for p in points:
+                                st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['ceramic_strength']:.1f} Н/м²")
+                            
+                    except Exception as e:
+                        st.error(f"Ошибка расчета: {e}")
+        else:
+            if st.button("Рассчитать свойства", use_container_width=True):
                 try:
                     if filler_type not in interpolators:
                         st.error(f"Нет данных для наполнителя {filler_type}")
                     else:
                         points = interpolators[filler_type]['points']
-                        
-                        # Находим точки с таким же силаном
                         same_silane = [p for p in points if p['silane'] == silane_content]
                         
                         if len(same_silane) >= 2:
@@ -83,7 +195,6 @@ with tab1:
                             pred = float(interp(filler_content))
                             st.success("✅ Расчет выполнен (интерполяция)")
                         else:
-                            # Используем все точки
                             x = [p['content'] for p in points]
                             y = [p['ceramic_strength'] for p in points]
                             interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
@@ -92,7 +203,6 @@ with tab1:
                         
                         st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
                         
-                        # Показываем использованные точки
                         st.caption("Использованные экспериментальные точки:")
                         for p in points:
                             st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['ceramic_strength']:.1f} Н/м²")
