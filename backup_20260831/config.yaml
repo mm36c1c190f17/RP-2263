@@ -1,0 +1,46 @@
+# config.yaml
+data:
+  raw_file: "data/raw/experimental_data.csv"
+  processed_file: "data/processed/experimental_data_processed.csv"
+  
+  # Какие колонки используем
+  features:
+    categorical:
+      - filler_type
+      - manufacturer
+      - rubber_type
+    numerical:
+      - silane_content
+      - filler_amount
+  
+  targets:
+    - fp_before
+    - ep_before
+    - fp_after
+    - ep_after
+    - rho_before
+    - rho_after
+    - P_strength
+
+model:
+  type: "random_forest"  # random_forest, xgboost, neural_network
+  params:
+    n_estimators: 100
+    max_depth: 10
+    random_state: 42
+    min_samples_split: 2
+    min_samples_leaf: 1
+
+training:
+  test_size: 0.2
+  random_state: 42
+  cross_validation: 5
+
+output:
+  models_dir: "models/"
+  plots_dir: "plots/"
+  predictions_file: "predictions.csv"
+  
+logging:
+  level: "INFO"
+  file: "training.log"

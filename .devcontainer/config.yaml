@@ -1,0 +1,53 @@
+cat > config.yaml << 'EOF'
+data:
+  raw_file: "data/raw/rubber_data_extended.csv"
+  processed_file: "data/processed/experimental_data_processed.csv"
+  
+  features:
+    categorical:
+      - base_type
+      - base_manufacturer
+      - filler_type
+      - filler_manufacturer
+    numerical:
+      - base_hardness
+      - filler_content
+      - temp
+      - time
+  
+  targets:
+    - strength_initial
+    - elongation_initial
+    - strength_aged_240h_250C
+    - elongation_aged_240h_250C
+    - strength_aged_72h_250C
+    - elongation_aged_72h_250C
+    - resistivity
+    - permittivity
+    - tan_delta
+    - dielectric_strength
+    - ceramic_strength
+
+model:
+  type: "random_forest"
+  params:
+    n_estimators: 100
+    max_depth: 10
+    random_state: 42
+    min_samples_split: 2
+    min_samples_leaf: 1
+
+training:
+  test_size: 0.2
+  random_state: 42
+  cross_validation: 5
+
+output:
+  models_dir: "models/"
+  plots_dir: "plots/"
+  predictions_file: "predictions.csv"
+  
+logging:
+  level: "INFO"
+  file: "training.log"
+EOF
