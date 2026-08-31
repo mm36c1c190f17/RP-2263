@@ -5,8 +5,6 @@ import joblib
 from pathlib import Path
 from scipy.interpolate import interp1d
 import base64
-from PIL import Image
-import os
 
 st.set_page_config(
     page_title="Прогнозирование свойств эластомерных материалов",
@@ -22,7 +20,6 @@ def get_image_base64(image_path):
     except:
         return None
 
-# Загружаем логотип
 logo_base64 = get_image_base64("static/logo.png")
 
 st.markdown("""
@@ -56,10 +53,6 @@ st.markdown("""
         padding: 0.6rem 2rem; 
         font-weight: 500; 
         width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
     }
     .stButton > button:hover { 
         background-color: #3a56d4; 
@@ -87,9 +80,12 @@ st.markdown("""
         padding-bottom: 0.3rem; 
         margin-bottom: 1.5rem; 
     }
-    .btn-logo {
-        height: 20px;
-        width: auto;
+    .property-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-left: 3px solid #4361ee;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -110,7 +106,7 @@ st.caption("Система прогнозирования на основе ин
 @st.cache_resource
 def load_interpolator():
     try:
-        interpolators = joblib.load('models/interpolators.pkl')
+        interpolators = joblib.load('models/interpolators_all.pkl')
         df = pd.read_csv('data/raw/experimental_data.csv')
         return interpolators, df
     except Exception as e:
@@ -146,66 +142,106 @@ with tab1:
         st.info(f"**Наполнитель:** {filler_type} ({filler_content} phr)")
         st.info(f"**Силан:** {silane_content} phr")
         
-        # Кнопка с логотипом
-        if logo_base64:
-            # Используем HTML для кнопки с логотипом
-            if st.button("Рассчитать свойства", use_container_width=True):
-                with st.spinner("Выполняется расчет..."):
-                    try:
-                        if filler_type not in interpolators:
-                            st.error(f"Нет данных для наполнителя {filler_type}")
-                        else:
-                            points = interpolators[filler_type]['points']
-                            same_silane = [p for p in points if p['silane'] == silane_content]
-                            
-                            if len(same_silane) >= 2:
-                                x = [p['content'] for p in same_silane]
-                                y = [p['ceramic_strength'] for p in same_silane]
-                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
-                                pred = float(interp(filler_content))
-                                st.success("✅ Расчет выполнен (интерполяция)")
-                            else:
-                                x = [p['content'] for p in points]
-                                y = [p['ceramic_strength'] for p in points]
-                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
-                                pred = float(interp(filler_content))
-                                st.success("✅ Расчет выполнен (экстраполяция)")
-                            
-                            st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
-                            
-                            st.caption("Использованные экспериментальные точки:")
-                            for p in points:
-                                st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['ceramic_strength']:.1f} Н/м²")
-                            
-                    except Exception as e:
-                        st.error(f"Ошибка расчета: {e}")
-        else:
-            if st.button("Рассчитать свойства", use_container_width=True):
+        if st.button("Рассчитать свойства", use_container_width=True):
+            with st.spinner("Выполняется расчет..."):
                 try:
                     if filler_type not in interpolators:
                         st.error(f"Нет данных для наполнителя {filler_type}")
                     else:
-                        points = interpolators[filler_type]['points']
-                        same_silane = [p for p in points if p['silane'] == silane_content]
+                        results = {}
+                        filler_interp = interpolators[filler_type]
                         
-                        if len(same_silane) >= 2:
-                            x = [p['content'] for p in same_silane]
-                            y = [p['ceramic_strength'] for p in same_silane]
-                            interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
-                            pred = float(interp(filler_content))
-                            st.success("✅ Расчет выполнен (интерполяция)")
-                        else:
-                            x = [p['content'] for p in points]
-                            y = [p['ceramic_strength'] for p in points]
-                            interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
-                            pred = float(interp(filler_content))
-                            st.success("✅ Расчет выполнен (экстраполяция)")
+                        for prop, interp_data in filler_interp.items():
+                            points = interp_data['points']
+                            
+                            # Ищем точки с таким же силаном
+                            same_silane = [p for p in points if p['silane'] == silane_content]
+                            
+                            if len(same_silane) >= 2:
+                                x = [p['content'] for p in same_silane]
+                                y = [p['value'] for p in same_silane]
+                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                                results[prop] = float(interp(filler_content))
+                            elif len(points) >= 2:
+                                x = [p['content'] for p in points]
+                                y = [p['value'] for p in points]
+                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                                results[prop] = float(interp(filler_content))
+                            else:
+                                results[prop] = None
                         
-                        st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
+                        st.success("✅ Расчет выполнен")
                         
-                        st.caption("Использованные экспериментальные точки:")
-                        for p in points:
-                            st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['ceramic_strength']:.1f} Н/м²")
+                        # Отображение результатов
+                        st.subheader("Результаты прогнозирования")
+                        
+                        # Группируем характеристики
+                        props_mechanical = ['strength_initial', 'elongation_initial', 
+                                           'strength_aged_240h_250C', 'elongation_aged_240h_250C',
+                                           'strength_aged_72h_250C', 'elongation_aged_72h_250C']
+                        props_electrical = ['resistivity', 'permittivity', 'tan_delta', 'dielectric_strength']
+                        props_ceramic = ['ceramic_strength']
+                        
+                        labels = {
+                            'strength_initial': 'Прочность начальная (МПа)',
+                            'elongation_initial': 'Удлинение начальное (%)',
+                            'strength_aged_240h_250C': 'Прочность 240ч/250°C (МПа)',
+                            'elongation_aged_240h_250C': 'Удлинение 240ч/250°C (%)',
+                            'strength_aged_72h_250C': 'Прочность 72ч/250°C (МПа)',
+                            'elongation_aged_72h_250C': 'Удлинение 72ч/250°C (%)',
+                            'resistivity': 'Удельное сопротивление (Ом·м)',
+                            'permittivity': 'Диэлектрическая проницаемость',
+                            'tan_delta': 'Тангенс угла диэлектрических потерь',
+                            'dielectric_strength': 'Диэлектрическая прочность (кВ/мм)',
+                            'ceramic_strength': 'Прочность керамического остатка (Н/м²)'
+                        }
+                        
+                        formats = {
+                            'strength_initial': '{:.2f}',
+                            'elongation_initial': '{:.0f}',
+                            'strength_aged_240h_250C': '{:.2f}',
+                            'elongation_aged_240h_250C': '{:.0f}',
+                            'strength_aged_72h_250C': '{:.2f}',
+                            'elongation_aged_72h_250C': '{:.0f}',
+                            'resistivity': '{:.2e}',
+                            'permittivity': '{:.3f}',
+                            'tan_delta': '{:.4f}',
+                            'dielectric_strength': '{:.1f}',
+                            'ceramic_strength': '{:.1f}'
+                        }
+                        
+                        # Механические свойства
+                        st.markdown("##### Механические свойства")
+                        cols = st.columns(3)
+                        for i, prop in enumerate(props_mechanical):
+                            if prop in results and results[prop] is not None:
+                                val = results[prop]
+                                fmt = formats.get(prop, '{:.2f}')
+                                with cols[i % 3]:
+                                    st.metric(labels.get(prop, prop), fmt.format(val))
+                        
+                        # Электрические свойства
+                        st.markdown("##### Электрические свойства")
+                        cols = st.columns(3)
+                        for i, prop in enumerate(props_electrical):
+                            if prop in results and results[prop] is not None:
+                                val = results[prop]
+                                fmt = formats.get(prop, '{:.2f}')
+                                with cols[i % 3]:
+                                    st.metric(labels.get(prop, prop), fmt.format(val))
+                        
+                        # Керамическая прочность
+                        st.markdown("##### Керамическая прочность")
+                        if 'ceramic_strength' in results and results['ceramic_strength'] is not None:
+                            st.metric(labels['ceramic_strength'], f"{results['ceramic_strength']:.1f} Н/м²")
+                        
+                        # Показываем использованные точки
+                        with st.expander("Показать использованные экспериментальные точки"):
+                            for prop, interp_data in filler_interp.items():
+                                if interp_data['points']:
+                                    st.caption(f"**{labels.get(prop, prop)}:**")
+                                    for p in interp_data['points']:
+                                        st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['value']:.2f}")
                         
                 except Exception as e:
                     st.error(f"Ошибка расчета: {e}")
