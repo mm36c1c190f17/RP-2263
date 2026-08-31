@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
 from pathlib import Path
 from scipy.interpolate import interp1d
@@ -24,18 +23,11 @@ logo_base64 = get_image_base64("static/logo.png")
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
     .stApp {
         background: linear-gradient(135deg, #e0e7ff 0%, #f0e6ff 50%, #fce4ec 100%);
         background-attachment: fixed;
     }
-    
-    .main {
-        background: transparent;
-        font-family: 'Inter', sans-serif;
-    }
-    
+    .main { background: transparent; }
     .header-container {
         display: flex;
         justify-content: space-between;
@@ -65,7 +57,6 @@ st.markdown("""
         margin-left: 20px;
         filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
     }
-    
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: #ffffff;
@@ -82,10 +73,6 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
     }
-    .stButton > button:active {
-        transform: translateY(0px);
-    }
-    
     [data-testid="metric-container"] {
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(10px);
@@ -93,7 +80,6 @@ st.markdown("""
         padding: 1.5rem 1rem;
         box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         border: 1px solid rgba(255, 255, 255, 0.3);
-        transition: all 0.3s ease;
     }
     [data-testid="metric-container"]:hover {
         transform: translateY(-4px);
@@ -104,7 +90,6 @@ st.markdown("""
         color: #4a5568;
         font-size: 0.85rem;
     }
-    
     .section-header {
         color: #2d3748;
         font-weight: 600;
@@ -117,7 +102,6 @@ st.markdown("""
         padding-bottom: 0.3rem;
         margin-bottom: 1.5rem;
     }
-    
     .footer {
         margin-top: 3rem;
         padding-top: 1.5rem;
@@ -130,57 +114,6 @@ st.markdown("""
         border-radius: 12px;
         padding: 1.5rem;
     }
-    
-    .stSelectbox label, .stNumberInput label {
-        font-weight: 500;
-        color: #2d3748;
-    }
-    
-    .info-box {
-        background: linear-gradient(135deg, #ebf4ff 0%, #f0e6ff 100%);
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        border-left: 4px solid #667eea;
-        margin-bottom: 1rem;
-    }
-    
-    .result-card {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        margin-top: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .category-title {
-        font-weight: 600;
-        color: #2d3748;
-        margin-top: 1.5rem;
-        margin-bottom: 0.8rem;
-        font-size: 1.1rem;
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    .fade-in {
-        animation: fadeInUp 0.6s ease forwards;
-    }
-    
-    .stSpinner > div {
-        border-color: #667eea !important;
-    }
-    
-    /* Улучшенные вкладки - шире и с отступами */
     .stTabs {
         background: rgba(255, 255, 255, 0.3);
         backdrop-filter: blur(10px);
@@ -189,9 +122,7 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         border: 1px solid rgba(255, 255, 255, 0.5);
         margin-bottom: 1rem;
-        width: 100%;
     }
-    
     .stTabs [data-baseweb="tab-list"] {
         gap: 6px;
         background: transparent;
@@ -200,7 +131,6 @@ st.markdown("""
         display: flex;
         flex-wrap: nowrap;
     }
-    
     .stTabs [data-baseweb="tab"] {
         border-radius: 12px;
         padding: 12px 48px !important;
@@ -216,37 +146,47 @@ st.markdown("""
         text-align: center;
         white-space: nowrap;
     }
-    
     .stTabs [data-baseweb="tab"]:hover {
         background: rgba(255, 255, 255, 0.5);
         color: #2d3748;
     }
-    
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: #ffffff !important;
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         border-radius: 12px;
     }
-    
     .stTabs [data-baseweb="tab-highlight"] {
         display: none !important;
     }
-    
     .stTabs [data-baseweb="tab-border"] {
         display: none !important;
     }
-    
     .stTabs [role="tabpanel"] {
         padding: 0.5rem 0.5rem 0.5rem 0.5rem;
         background: rgba(255, 255, 255, 0.2);
         border-radius: 12px;
         margin-top: 0.5rem;
     }
+    .stSpinner > div {
+        border-color: #667eea !important;
+    }
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .fade-in {
+        animation: fadeInUp 0.6s ease forwards;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Заголовок с логотипом
 if logo_base64:
     st.markdown(f"""
     <div class="header-container">
@@ -262,26 +202,25 @@ else:
     st.caption("Система прогнозирования на основе интерполяции экспериментальных данных")
 
 @st.cache_resource
-def load_interpolator():
+def load_data():
     try:
         interpolators = joblib.load('models/interpolators_all.pkl')
         df = pd.read_csv('data/raw/experimental_data.csv')
         return interpolators, df
     except Exception as e:
-        st.error(f"Ошибка загрузки: {e}")
         return None, None
 
-interpolators, data_df = load_interpolator()
+interpolators, data_df = load_data()
 
 if interpolators is None:
-    st.warning("Интерполятор не загружен")
+    st.error("Не удалось загрузить данные. Проверьте файлы models/interpolators_all.pkl")
     st.stop()
 
 st.sidebar.markdown("Управление")
 st.sidebar.write(f"Записей в базе: {len(data_df)}")
 st.sidebar.write(f"Наполнителей: {len(data_df['filler_type'].unique())}")
+st.sidebar.write(f"Доступно интерполяторов: {len(interpolators)}")
 st.sidebar.markdown("---")
-st.sidebar.caption("Версия 3.1")
 
 tab1, tab2 = st.tabs(["Прогнозирование", "Данные"])
 
@@ -307,116 +246,112 @@ with tab1:
                 time.sleep(0.5)
                 
                 try:
+                    # Проверяем наличие данных для наполнителя
                     if filler_type not in interpolators:
                         st.error(f"Нет данных для наполнителя {filler_type}")
                     else:
-                        results = {}
-                        filler_interp = interpolators[filler_type]
+                        filler_data = interpolators[filler_type]
                         
-                        for prop, interp_data in filler_interp.items():
-                            points = interp_data['points']
-                            same_silane = [p for p in points if p['silane'] == silane_content]
+                        if not filler_data:
+                            st.warning(f"Для {filler_type} нет данных для интерполяции")
+                        else:
+                            results = {}
                             
-                            if len(same_silane) >= 2:
-                                x = [p['content'] for p in same_silane]
-                                y = [p['value'] for p in same_silane]
-                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
-                                results[prop] = float(interp(filler_content))
-                            elif len(points) >= 2:
-                                x = [p['content'] for p in points]
-                                y = [p['value'] for p in points]
-                                interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
-                                results[prop] = float(interp(filler_content))
+                            # Для каждого свойства
+                            for prop, prop_data in filler_data.items():
+                                points = prop_data['points']
+                                
+                                if len(points) >= 2:
+                                    # Фильтруем по силану
+                                    same_silane = [p for p in points if p['silane'] == silane_content]
+                                    use_points = same_silane if len(same_silane) >= 2 else points
+                                    
+                                    try:
+                                        x = [p['content'] for p in use_points]
+                                        y = [p['value'] for p in use_points]
+                                        interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                                        results[prop] = float(interp(filler_content))
+                                    except Exception as e:
+                                        results[prop] = None
+                                else:
+                                    results[prop] = None
+                            
+                            # Проверяем есть ли результаты
+                            has_results = False
+                            for prop, val in results.items():
+                                if val is not None:
+                                    has_results = True
+                                    break
+                            
+                            if not has_results:
+                                st.warning(f"Недостаточно данных для расчета {filler_type} при {filler_content} phr")
                             else:
-                                results[prop] = None
-                        
-                        st.success("Расчет выполнен успешно")
-                        
-                        st.markdown('<div class="fade-in">', unsafe_allow_html=True)
-                        st.subheader("Результаты прогнозирования")
-                        
-                        props_mechanical = ['strength_initial', 'elongation_initial', 
-                                           'strength_aged_240h_250C', 'elongation_aged_240h_250C',
-                                           'strength_aged_72h_250C', 'elongation_aged_72h_250C']
-                        props_electrical = ['resistivity', 'permittivity', 'tan_delta', 'dielectric_strength']
-                        
-                        labels = {
-                            'strength_initial': 'Прочность начальная',
-                            'elongation_initial': 'Удлинение начальное',
-                            'strength_aged_240h_250C': 'Прочность 240ч/250°C',
-                            'elongation_aged_240h_250C': 'Удлинение 240ч/250°C',
-                            'strength_aged_72h_250C': 'Прочность 72ч/250°C',
-                            'elongation_aged_72h_250C': 'Удлинение 72ч/250°C',
-                            'resistivity': 'Удельное сопротивление',
-                            'permittivity': 'Диэлектрическая проницаемость',
-                            'tan_delta': 'Тангенс угла потерь',
-                            'dielectric_strength': 'Диэлектрическая прочность',
-                            'ceramic_strength': 'Прочность керамического остатка'
-                        }
-                        
-                        units = {
-                            'strength_initial': 'МПа',
-                            'elongation_initial': '%',
-                            'strength_aged_240h_250C': 'МПа',
-                            'elongation_aged_240h_250C': '%',
-                            'strength_aged_72h_250C': 'МПа',
-                            'elongation_aged_72h_250C': '%',
-                            'resistivity': 'Ом·м',
-                            'permittivity': '',
-                            'tan_delta': '',
-                            'dielectric_strength': 'кВ/мм',
-                            'ceramic_strength': 'Н/м²'
-                        }
-                        
-                        formats = {
-                            'strength_initial': '{:.2f}',
-                            'elongation_initial': '{:.0f}',
-                            'strength_aged_240h_250C': '{:.2f}',
-                            'elongation_aged_240h_250C': '{:.0f}',
-                            'strength_aged_72h_250C': '{:.2f}',
-                            'elongation_aged_72h_250C': '{:.0f}',
-                            'resistivity': '{:.2e}',
-                            'permittivity': '{:.3f}',
-                            'tan_delta': '{:.4f}',
-                            'dielectric_strength': '{:.1f}',
-                            'ceramic_strength': '{:.1f}'
-                        }
-                        
-                        st.markdown('##### Механические свойства')
-                        cols = st.columns(3)
-                        for i, prop in enumerate(props_mechanical):
-                            if prop in results and results[prop] is not None:
-                                val = results[prop]
-                                fmt = formats.get(prop, '{:.2f}')
-                                unit = units.get(prop, '')
-                                with cols[i % 3]:
-                                    st.metric(labels.get(prop, prop), f"{fmt.format(val)} {unit}")
-                        
-                        st.markdown('##### Электрические свойства')
-                        cols = st.columns(3)
-                        for i, prop in enumerate(props_electrical):
-                            if prop in results and results[prop] is not None:
-                                val = results[prop]
-                                fmt = formats.get(prop, '{:.2f}')
-                                unit = units.get(prop, '')
-                                with cols[i % 3]:
-                                    st.metric(labels.get(prop, prop), f"{fmt.format(val)} {unit}")
-                        
-                        st.markdown('##### Керамические свойства')
-                        if 'ceramic_strength' in results and results['ceramic_strength'] is not None:
-                            st.metric(labels['ceramic_strength'], f"{results['ceramic_strength']:.1f} Н/м²")
-                        
-                        with st.expander("Показать использованные экспериментальные точки"):
-                            for prop, interp_data in filler_interp.items():
-                                if interp_data['points']:
-                                    st.caption(f"**{labels.get(prop, prop)}:**")
-                                    for p in interp_data['points']:
-                                        st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['value']:.2f}")
-                        
-                        st.markdown('</div>', unsafe_allow_html=True)
+                                st.success("Расчет выполнен успешно")
+                                
+                                st.markdown('<div class="fade-in">', unsafe_allow_html=True)
+                                st.subheader("Результаты прогнозирования")
+                                
+                                labels = {
+                                    'strength_initial': 'Прочность начальная',
+                                    'elongation_initial': 'Удлинение начальное',
+                                    'strength_aged_240h_250C': 'Прочность 240ч/250°C',
+                                    'elongation_aged_240h_250C': 'Удлинение 240ч/250°C',
+                                    'strength_aged_72h_250C': 'Прочность 72ч/250°C',
+                                    'elongation_aged_72h_250C': 'Удлинение 72ч/250°C',
+                                    'resistivity': 'Удельное сопротивление',
+                                    'permittivity': 'Диэлектрическая проницаемость',
+                                    'tan_delta': 'Тангенс угла потерь',
+                                    'dielectric_strength': 'Диэлектрическая прочность',
+                                    'ceramic_strength': 'Прочность керамического остатка'
+                                }
+                                
+                                units = {
+                                    'strength_initial': 'МПа',
+                                    'elongation_initial': '%',
+                                    'strength_aged_240h_250C': 'МПа',
+                                    'elongation_aged_240h_250C': '%',
+                                    'strength_aged_72h_250C': 'МПа',
+                                    'elongation_aged_72h_250C': '%',
+                                    'resistivity': 'Ом·м',
+                                    'permittivity': '',
+                                    'tan_delta': '',
+                                    'dielectric_strength': 'кВ/мм',
+                                    'ceramic_strength': 'Н/м²'
+                                }
+                                
+                                formats = {
+                                    'strength_initial': '{:.2f}',
+                                    'elongation_initial': '{:.0f}',
+                                    'strength_aged_240h_250C': '{:.2f}',
+                                    'elongation_aged_240h_250C': '{:.0f}',
+                                    'strength_aged_72h_250C': '{:.2f}',
+                                    'elongation_aged_72h_250C': '{:.0f}',
+                                    'resistivity': '{:.2e}',
+                                    'permittivity': '{:.3f}',
+                                    'tan_delta': '{:.4f}',
+                                    'dielectric_strength': '{:.1f}',
+                                    'ceramic_strength': '{:.1f}'
+                                }
+                                
+                                # Отображаем все результаты
+                                for prop, val in results.items():
+                                    if val is not None and prop in labels:
+                                        fmt = formats.get(prop, '{:.2f}')
+                                        unit = units.get(prop, '')
+                                        st.metric(labels[prop], f"{fmt.format(val)} {unit}")
+                                
+                                st.markdown('</div>', unsafe_allow_html=True)
+                                
+                                with st.expander("Показать использованные экспериментальные точки"):
+                                    for prop, prop_data in filler_data.items():
+                                        if prop_data['points']:
+                                            st.caption(f"**{labels.get(prop, prop)}:**")
+                                            for p in prop_data['points']:
+                                                st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['value']:.2f}")
                         
                 except Exception as e:
                     st.error(f"Ошибка расчета: {e}")
+                    st.info("Проверьте правильность введенных данных")
 
 with tab2:
     st.markdown('<p class="section-header">Экспериментальные данные</p>', unsafe_allow_html=True)
