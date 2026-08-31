@@ -27,24 +27,26 @@ st.title("Прогнозирование свойств эластомерных
 st.caption("Система прогнозирования на основе машинного обучения")
 
 @st.cache_resource
-def load_models():
+def load_model():
     try:
-        # Загружаем таблицу поиска
-        lookup_table = joblib.load('models/lookup_table.pkl')
+        model = CatBoostRegressor()
+        model.load_model('models/catboost_predictor.cbm')
+        feature_names = joblib.load('models/feature_names.pkl')
+        cat_features = joblib.load('models/cat_features.pkl')
         df = pd.read_csv('data/raw/experimental_data.csv')
-        return lookup_table, df
+        return model, feature_names, cat_features, df
     except Exception as e:
-        st.error(f"Ошибка загрузки: {e}")
-        return None, None
+        st.error(f"Ошибка загрузки модели: {e}")
+        return None, None, None, None
 
-lookup_table, data_df = load_models()
+model, feature_names, cat_features, data_df = load_model()
 
-if lookup_table is None:
-    st.warning("Таблица поиска не загружена")
+if model is None:
+    st.warning("Модель не загружена")
     st.stop()
 
 st.sidebar.markdown("### Управление")
-st.sidebar.write(f"**Записей в базе:** {len(data_df)}")
+st.sidebar.write(f"**Записей для обучения:** {len(data_df)}")
 st.sidebar.write(f"**Наполнителей:** {len(data_df['filler_type'].unique())}")
 
 tab1, tab2 = st.tabs(["Прогнозирование", "Данные"])
@@ -67,41 +69,39 @@ with tab1:
         st.info(f"**Силан:** {silane_content} phr")
         
         if st.button("Рассчитать свойства", use_container_width=True):
-            key = (filler_type, filler_content, silane_content)
-            
-            if key in lookup_table:
-                results = lookup_table[key]
-                st.success("✅ Данные найдены в базе")
-                
-                if results.get('ceramic_strength') is not None:
-                    st.metric("Прочность керамического остатка", f"{results['ceramic_strength']:.1f} Н/м²")
-                    st.caption("Значение из экспериментальных данных")
-            else:
-                st.warning("⚠️ Данные для этого состава не найдены в базе")
-                st.info("💡 Добавьте этот состав в файл данных для точного предсказания")
-                
-                # Показываем ближайшие известные составы
-                st.markdown("---")
-                st.caption("Ближайшие известные составы:")
-                nearby = data_df[data_df['filler_type'] == filler_type]
-                if len(nearby) > 0:
-                    for _, row in nearby.iterrows():
-                        st.caption(f"  {row['filler_content']} phr + {row['silane_content']} phr силан → {row['ceramic_strength']:.1f} Н/м²")
+            with st.spinner("Выполняется расчет..."):
+                try:
+                    input_data = pd.DataFrame([{
+                        'base_type': 'VMQ',
+                        'base_manufacturer': 'Xiameter',
+                        'filler_type': filler_type,
+                        'filler_manufacturer': 'JSC_Vostochnye_Ogneupory',
+                        'silane_type': 'A-1120' if silane_content > 0 else '0',
+                        'base_hardness': 70,
+                        'filler_content': filler_content,
+                        'silane_content': silane_content,
+                        'temp': 115,
+                        'time': 15
+                    }])
+                    
+                    input_data = input_data[feature_names]
+                    pred = model.predict(input_data)[0]
+                    
+                    st.success("✅ Расчет выполнен")
+                    st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
+                    
+                    # Дополнительная информация
+                    st.caption(f"Модель обучена на {len(data_df)} экспериментальных образцах")
+                    
+                except Exception as e:
+                    st.error(f"Ошибка расчета: {e}")
 
 with tab2:
     st.markdown('<p class="section-header">Экспериментальные данные</p>', unsafe_allow_html=True)
     st.dataframe(data_df, use_container_width=True)
-    
-    csv = data_df.to_csv(index=False)
-    st.download_button(
-        label="Скачать данные (CSV)",
-        data=csv,
-        file_name="experimental_data.csv",
-        mime="text/csv"
-    )
 
 st.markdown("""
 <div class="footer">
-    Система прогнозирования свойств эластомерных материалов &bull; Версия 2.5 &bull; Таблица поиска
+    Система прогнозирования свойств эластомерных материалов &bull; Алгоритм: CatBoost
 </div>
 """, unsafe_allow_html=True)

@@ -14,11 +14,13 @@ print("=" * 60)
 df = pd.read_csv('data/raw/experimental_data.csv')
 print(f"✅ Загружено {len(df)} записей")
 
+# Показываем данные по CaSiO3
+print("\n📊 Данные для CaSiO3:")
+print(df[df['filler_type'] == 'CaSiO3'][['filler_content', 'silane_content', 'ceramic_strength']])
+
 # Определяем колонки
 cat_features = ['base_type', 'base_manufacturer', 'filler_type', 'filler_manufacturer', 'silane_type']
 num_features = ['base_hardness', 'filler_content', 'silane_content', 'temp', 'time']
-
-# Все колонки в правильном порядке
 feature_names = cat_features + num_features
 
 X = df[feature_names]
@@ -31,16 +33,16 @@ for col in num_features:
 # Разделяем
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-print(f"📊 Train: {len(X_train)} записей, Test: {len(X_test)} записей")
+print(f"\n📊 Train: {len(X_train)} записей, Test: {len(X_test)} записей")
 
-# Обучаем
+# Обучаем CatBoost с параметрами для малых данных
 model = CatBoostRegressor(
-    iterations=200,
-    learning_rate=0.1,
-    depth=4,
-    l2_leaf_reg=5,
+    iterations=500,          # больше итераций
+    learning_rate=0.05,      # меньше шаг
+    depth=6,                 # глубже дерево
+    l2_leaf_reg=3,          # регуляризация
     random_seed=42,
-    verbose=50,
+    verbose=100,
     loss_function='RMSE'
 )
 
@@ -48,7 +50,7 @@ model.fit(
     X_train, y_train,
     cat_features=cat_features,
     eval_set=(X_test, y_test),
-    verbose=50
+    verbose=100
 )
 
 # Оценка
@@ -73,4 +75,35 @@ joblib.dump(feature_names, 'models/feature_names.pkl')
 joblib.dump(cat_features, 'models/cat_features.pkl')
 
 print("\n✅ Модель сохранена")
-print(f"   Порядок колонок: {feature_names}")
+
+# Проверка на известных составах
+print("\n🔮 Проверка предсказаний:")
+test_cases = [
+    ('CaSiO3', 30, 0, 98.8),
+    ('CaSiO3', 40, 5, 250.0),
+    ('CaSiO3', 30, 5, None),  # Этого нет в данных
+]
+
+for filler, content, silane, real in test_cases:
+    input_data = pd.DataFrame([{
+        'base_type': 'VMQ',
+        'base_manufacturer': 'Xiameter',
+        'filler_type': filler,
+        'filler_manufacturer': 'JSC_Geokom',
+        'silane_type': 'A-1120' if silane > 0 else '0',
+        'base_hardness': 70,
+        'filler_content': content,
+        'silane_content': silane,
+        'temp': 115,
+        'time': 15
+    }])
+    
+    input_data = input_data[feature_names]
+    pred = model.predict(input_data)[0]
+    
+    if real is not None:
+        print(f"  {filler} {content} phr + {silane} phr: реальное={real:.1f}, предсказанное={pred:.1f}")
+    else:
+        print(f"  {filler} {content} phr + {silane} phr: предсказанное={pred:.1f} (НОВЫЙ СОСТАВ)")
+
+print("\n✅ Модель готова к использованию!")
