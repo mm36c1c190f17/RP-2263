@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
 from pathlib import Path
-import plotly.express as px
 
 st.set_page_config(
     page_title="RubberAI - Прогнозирование свойств резин",
@@ -15,55 +13,21 @@ st.title("🧪 RubberAI - Прогнозирование свойств рези
 
 @st.cache_resource
 def load_models():
-    """Загрузка KNN моделей"""
     try:
-        models_dir = Path('models/')
-        
-        # Ищем KNN модели
-        encoders_files = list(models_dir.glob('knn_encoders_*.pkl'))
-        if not encoders_files:
-            # Если нет KNN, ищем старые encoders
-            encoders_files = list(models_dir.glob('encoders_*.pkl'))
-            
-        if not encoders_files:
-            return None, None, None, None, "Модели не найдены"
-        
-        latest = max(encoders_files, key=lambda x: x.stat().st_mtime)
-        timestamp = latest.stem.replace('knn_encoders_', '').replace('encoders_', '')
-        
-        # Загружаем
-        encoders = joblib.load(f'models/knn_encoders_{timestamp}.pkl' if Path(f'models/knn_encoders_{timestamp}.pkl').exists() else f'models/encoders_{timestamp}.pkl')
-        scaler = joblib.load(f'models/knn_scaler_{timestamp}.pkl' if Path(f'models/knn_scaler_{timestamp}.pkl').exists() else f'models/scaler_{timestamp}.pkl')
-        
-        models = {}
-        for f in models_dir.glob(f'knn_*_{timestamp}.pkl'):
-            name = f.stem.replace('knn_', '').replace(f'_{timestamp}', '')
-            if name not in ['encoders', 'scaler']:
-                models[name] = joblib.load(f)
-        
-        # Если нет KNN моделей, загружаем старые
-        if not models:
-            for f in models_dir.glob(f'*_{timestamp}.pkl'):
-                name = f.stem.replace(f'_{timestamp}', '')
-                if name not in ['encoders', 'scaler', 'feature_info']:
-                    models[name] = joblib.load(f)
-        
+        lookup_table = joblib.load('models/lookup_table.pkl')
         df = pd.read_csv('data/raw/experimental_data.csv')
-        return models, encoders, scaler, df, None
+        return lookup_table, df
     except Exception as e:
-        return None, None, None, None, str(e)
+        st.error(f"Ошибка загрузки: {e}")
+        return None, None
 
-models, encoders, scaler, data_df, error = load_models()
+lookup_table, data_df = load_models()
 
-if error:
-    st.error(f"Ошибка: {error}")
+if lookup_table is None:
+    st.warning("⚠️ Таблица поиска не загружена")
     st.stop()
 
-if models is None:
-    st.warning("Модели не загружены")
-    st.stop()
-
-st.success(f"✅ Загружено {len(models)} моделей на основе {len(data_df)} записей")
+st.success(f"✅ Загружено {len(lookup_table)} записей")
 
 # Интерфейс
 st.sidebar.write(f"📈 Данные: {len(data_df)} записей")
@@ -79,10 +43,8 @@ with tab1:
     with col1:
         fillers = sorted(data_df['filler_type'].unique())
         filler_type = st.selectbox("Тип наполнителя", fillers)
-        filler_content = st.slider("Дозировка наполнителя (phr)", 10, 100, 30, 5)
-        silane_content = st.slider("Содержание силана (phr)", 0, 10, 0, 1)
-        temp = st.slider("Температура (°C)", 100, 200, 115, 5)
-        time = st.slider("Время (мин)", 10, 60, 15, 5)
+        filler_content = st.number_input("Дозировка наполнителя (phr)", min_value=10, max_value=50, value=30, step=1)
+        silane_content = st.number_input("Содержание силана (phr)", min_value=0, max_value=10, value=0, step=1)
     
     with col2:
         st.subheader("📊 Параметры состава")
@@ -90,70 +52,42 @@ with tab1:
         st.write(f"**Наполнитель:** {filler_type}")
         st.write(f"**Дозировка:** {filler_content} phr")
         st.write(f"**Силан:** {silane_content} phr")
-        st.write(f"**Температура:** {temp}°C")
-        st.write(f"**Время:** {time} мин")
         
-        if st.button("🚀 Предсказать свойства", type="primary"):
-            with st.spinner("Выполняется предсказание..."):
-                try:
-                    data = {
-                        'base_type': 'VMQ',
-                        'base_hardness': 70,
-                        'base_manufacturer': 'Xiameter',
-                        'filler_type': filler_type,
-                        'filler_manufacturer': 'JSC_Vostochnye_Ogneupory',
-                        'filler_content': filler_content,
-                        'silane_content': silane_content,
-                        'temp': temp,
-                        'time': time
-                    }
-                    
-                    X_dict = {}
-                    for col, encoder in encoders.items():
-                        if col in data:
-                            try:
-                                X_dict[f'{col}_encoded'] = encoder.transform([data[col]])[0]
-                            except:
-                                X_dict[f'{col}_encoded'] = encoder.transform([encoder.classes_[0]])[0]
-                    
-                    X_dict['base_hardness'] = data['base_hardness']
-                    X_dict['filler_content'] = data['filler_content']
-                    X_dict['silane_content'] = data['silane_content']
-                    X_dict['temp'] = data['temp']
-                    X_dict['time'] = data['time']
-                    
-                    X_df = pd.DataFrame([X_dict])
-                    X_scaled = scaler.transform(X_df)
-                    
-                    results = {}
-                    for name, model in models.items():
-                        results[name] = float(model.predict(X_scaled)[0])
-                    
-                    st.success("✅ Предсказание выполнено!")
-                    
-                    col3, col4 = st.columns(2)
-                    with col3:
-                        if 'strength_initial' in results:
-                            st.metric("Прочность начальная", f"{results['strength_initial']:.2f} МПа")
-                        if 'elongation_initial' in results:
-                            st.metric("Удлинение начальное", f"{results['elongation_initial']:.0f} %")
-                        if 'strength_aged_240h_250C' in results:
-                            st.metric("Прочность 240ч/250°C", f"{results['strength_aged_240h_250C']:.2f} МПа")
-                        if 'elongation_aged_240h_250C' in results:
-                            st.metric("Удлинение 240ч/250°C", f"{results['elongation_aged_240h_250C']:.0f} %")
-                    with col4:
-                        if 'strength_aged_72h_250C' in results:
-                            st.metric("Прочность 72ч/250°C", f"{results['strength_aged_72h_250C']:.2f} МПа")
-                        if 'elongation_aged_72h_250C' in results:
-                            st.metric("Удлинение 72ч/250°C", f"{results['elongation_aged_72h_250C']:.0f} %")
-                        if 'resistivity' in results:
-                            st.metric("Уд. сопротивление", f"{results['resistivity']:.2e} Ом·м")
-                        if 'ceramic_strength' in results:
-                            st.metric("Прочность керамич. остатка", f"{results['ceramic_strength']:.1f} Н/м²")
-                        
-                except Exception as e:
-                    st.error(f"Ошибка: {e}")
+        if st.button("🚀 Найти свойства", type="primary"):
+            key = (filler_type, filler_content, silane_content)
+            
+            if key in lookup_table:
+                results = lookup_table[key]
+                st.success("✅ Найдено в базе данных!")
+                
+                col3, col4 = st.columns(2)
+                with col3:
+                    if results.get('strength_initial') is not None:
+                        st.metric("Прочность начальная", f"{results['strength_initial']:.2f} МПа")
+                    if results.get('elongation_initial') is not None:
+                        st.metric("Удлинение начальное", f"{results['elongation_initial']:.0f} %")
+                    if results.get('strength_aged_240h_250C') is not None:
+                        st.metric("Прочность 240ч/250°C", f"{results['strength_aged_240h_250C']:.2f} МПа")
+                with col4:
+                    if results.get('elongation_aged_240h_250C') is not None:
+                        st.metric("Удлинение 240ч/250°C", f"{results['elongation_aged_240h_250C']:.0f} %")
+                    if results.get('ceramic_strength') is not None:
+                        st.metric("Прочность керамич. остатка", f"{results['ceramic_strength']:.1f} Н/м²")
+                    if results.get('resistivity') is not None:
+                        st.metric("Уд. сопротивление", f"{results['resistivity']:.2e} Ом·м")
+            else:
+                st.warning("⚠️ Данные для этого состава не найдены в базе")
+                st.info("💡 Добавьте этот состав в файл данных и переобучите модель")
 
 with tab2:
-    st.header("📋 Данные")
+    st.header("📋 Все данные")
     st.dataframe(data_df, use_container_width=True)
+    
+    # Скачать данные
+    csv = data_df.to_csv(index=False)
+    st.download_button(
+        label="📥 Скачать данные (CSV)",
+        data=csv,
+        file_name="experimental_data.csv",
+        mime="text/csv"
+    )
