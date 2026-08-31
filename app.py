@@ -9,11 +9,10 @@ import time
 
 st.set_page_config(
     page_title="Прогнозирование свойств эластомерных материалов",
-    page_icon="🧪",
+    page_icon="⚙️",
     layout="wide"
 )
 
-# Функция для загрузки изображения в base64
 def get_image_base64(image_path):
     try:
         with open(image_path, "rb") as img_file:
@@ -23,13 +22,17 @@ def get_image_base64(image_path):
 
 logo_base64 = get_image_base64("static/logo.png")
 
-# Яркий, жизнерадостный дизайн
+# Цветной дизайн с градиентным фоном
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
+    .stApp {
+        background: linear-gradient(135deg, #e0e7ff 0%, #f0e6ff 50%, #fce4ec 100%);
+    }
+    
     .main {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e8edf5 100%);
+        background: transparent;
         font-family: 'Inter', sans-serif;
     }
     
@@ -38,7 +41,7 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem 2rem;
+        padding: 1.2rem 2rem;
         border-radius: 16px;
         margin-bottom: 1.5rem;
         box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
@@ -84,16 +87,17 @@ st.markdown("""
     }
     
     [data-testid="metric-container"] {
-        background: white;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
         border-radius: 16px;
         padding: 1.5rem 1rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        border: 1px solid rgba(102, 126, 234, 0.1);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid rgba(255, 255, 255, 0.3);
         transition: all 0.3s ease;
     }
     [data-testid="metric-container"]:hover {
         transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
     }
     [data-testid="metric-container"] label {
         font-weight: 500;
@@ -117,11 +121,12 @@ st.markdown("""
     .footer {
         margin-top: 3rem;
         padding-top: 1.5rem;
-        border-top: 2px solid #e2e8f0;
+        border-top: 2px solid rgba(102, 126, 234, 0.3);
         font-size: 0.8rem;
-        color: #718096;
+        color: #4a5568;
         text-align: center;
-        background: white;
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(10px);
         border-radius: 12px;
         padding: 1.5rem;
     }
@@ -140,11 +145,13 @@ st.markdown("""
     }
     
     .result-card {
-        background: white;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
         border-radius: 16px;
         padding: 1.5rem;
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         margin-top: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
     
     .category-title {
@@ -155,7 +162,6 @@ st.markdown("""
         font-size: 1.1rem;
     }
     
-    /* Анимация для результатов */
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -170,9 +176,26 @@ st.markdown("""
         animation: fadeInUp 0.6s ease forwards;
     }
     
-    /* Стиль для спиннера */
     .stSpinner > div {
         border-color: #667eea !important;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 12px;
+        padding: 4px;
+        backdrop-filter: blur(10px);
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 500;
+        color: #4a5568;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #ffffff !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -182,14 +205,14 @@ if logo_base64:
     st.markdown(f"""
     <div class="header-container">
         <div>
-            <div class="header-title">🧪 Прогнозирование свойств эластомерных материалов</div>
+            <div class="header-title">Прогнозирование свойств эластомерных материалов</div>
             <div class="header-subtitle">Система прогнозирования на основе интерполяции экспериментальных данных</div>
         </div>
         <img src="data:image/png;base64,{logo_base64}" class="header-logo" />
     </div>
     """, unsafe_allow_html=True)
 else:
-    st.title("🧪 Прогнозирование свойств эластомерных материалов")
+    st.title("Прогнозирование свойств эластомерных материалов")
     st.caption("Система прогнозирования на основе интерполяции экспериментальных данных")
 
 @st.cache_resource
@@ -208,16 +231,16 @@ if interpolators is None:
     st.warning("Интерполятор не загружен")
     st.stop()
 
-st.sidebar.markdown("### 🎯 Управление")
-st.sidebar.write(f"**📊 Записей в базе:** {len(data_df)}")
-st.sidebar.write(f"**🏷️ Наполнителей:** {len(data_df['filler_type'].unique())}")
+st.sidebar.markdown("Управление")
+st.sidebar.write(f"Записей в базе: {len(data_df)}")
+st.sidebar.write(f"Наполнителей: {len(data_df['filler_type'].unique())}")
 st.sidebar.markdown("---")
-st.sidebar.caption("✨ Версия 3.0")
+st.sidebar.caption("Версия 3.1")
 
-tab1, tab2 = st.tabs(["🔮 Прогнозирование", "📊 Данные"])
+tab1, tab2 = st.tabs(["Прогнозирование", "Данные"])
 
 with tab1:
-    st.markdown('<p class="section-header">📋 Параметры состава</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">Параметры состава</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
@@ -228,15 +251,14 @@ with tab1:
         silane_content = st.number_input("Содержание силана (phr)", min_value=0, max_value=10, value=0, step=1)
     
     with col2:
-        st.markdown("### 📋 Состав композиции")
+        st.markdown("### Состав композиции")
         st.info(f"**Каучук:** VMQ (Xiameter, твердость 70)")
         st.info(f"**Наполнитель:** {filler_type} ({filler_content} phr)")
         st.info(f"**Силан:** {silane_content} phr")
         
-        if st.button("🚀 Рассчитать свойства", use_container_width=True):
-            with st.spinner("🔄 Выполняется расчет..."):
-                # Имитация анимации - пауза для эффекта
-                time.sleep(0.8)
+        if st.button("Рассчитать свойства", use_container_width=True):
+            with st.spinner("Выполняется расчет..."):
+                time.sleep(0.5)
                 
                 try:
                     if filler_type not in interpolators:
@@ -262,33 +284,28 @@ with tab1:
                             else:
                                 results[prop] = None
                         
-                        # Успешное выполнение
-                        st.balloons()
-                        st.success("✅ Расчет выполнен успешно!")
+                        st.success("Расчет выполнен успешно")
                         
-                        # Отображение результатов
                         st.markdown('<div class="fade-in">', unsafe_allow_html=True)
-                        st.subheader("📊 Результаты прогнозирования")
+                        st.subheader("Результаты прогнозирования")
                         
-                        # Группируем характеристики
                         props_mechanical = ['strength_initial', 'elongation_initial', 
                                            'strength_aged_240h_250C', 'elongation_aged_240h_250C',
                                            'strength_aged_72h_250C', 'elongation_aged_72h_250C']
                         props_electrical = ['resistivity', 'permittivity', 'tan_delta', 'dielectric_strength']
-                        props_ceramic = ['ceramic_strength']
                         
                         labels = {
-                            'strength_initial': '⚡ Прочность начальная',
-                            'elongation_initial': '📏 Удлинение начальное',
-                            'strength_aged_240h_250C': '🔥 Прочность 240ч/250°C',
-                            'elongation_aged_240h_250C': '📐 Удлинение 240ч/250°C',
-                            'strength_aged_72h_250C': '🔥 Прочность 72ч/250°C',
-                            'elongation_aged_72h_250C': '📐 Удлинение 72ч/250°C',
-                            'resistivity': '⚡ Удельное сопротивление',
-                            'permittivity': '📊 Диэлектрическая проницаемость',
-                            'tan_delta': '📉 Тангенс угла потерь',
-                            'dielectric_strength': '⚡ Диэлектрическая прочность',
-                            'ceramic_strength': '🏺 Прочность керамического остатка'
+                            'strength_initial': 'Прочность начальная',
+                            'elongation_initial': 'Удлинение начальное',
+                            'strength_aged_240h_250C': 'Прочность 240ч/250°C',
+                            'elongation_aged_240h_250C': 'Удлинение 240ч/250°C',
+                            'strength_aged_72h_250C': 'Прочность 72ч/250°C',
+                            'elongation_aged_72h_250C': 'Удлинение 72ч/250°C',
+                            'resistivity': 'Удельное сопротивление',
+                            'permittivity': 'Диэлектрическая проницаемость',
+                            'tan_delta': 'Тангенс угла потерь',
+                            'dielectric_strength': 'Диэлектрическая прочность',
+                            'ceramic_strength': 'Прочность керамического остатка'
                         }
                         
                         units = {
@@ -319,8 +336,7 @@ with tab1:
                             'ceramic_strength': '{:.1f}'
                         }
                         
-                        # Механические свойства
-                        st.markdown('##### 🛠️ Механические свойства')
+                        st.markdown('##### Механические свойства')
                         cols = st.columns(3)
                         for i, prop in enumerate(props_mechanical):
                             if prop in results and results[prop] is not None:
@@ -330,8 +346,7 @@ with tab1:
                                 with cols[i % 3]:
                                     st.metric(labels.get(prop, prop), f"{fmt.format(val)} {unit}")
                         
-                        # Электрические свойства
-                        st.markdown('##### ⚡ Электрические свойства')
+                        st.markdown('##### Электрические свойства')
                         cols = st.columns(3)
                         for i, prop in enumerate(props_electrical):
                             if prop in results and results[prop] is not None:
@@ -341,31 +356,29 @@ with tab1:
                                 with cols[i % 3]:
                                     st.metric(labels.get(prop, prop), f"{fmt.format(val)} {unit}")
                         
-                        # Керамическая прочность
-                        st.markdown('##### 🏺 Керамические свойства')
+                        st.markdown('##### Керамические свойства')
                         if 'ceramic_strength' in results and results['ceramic_strength'] is not None:
                             st.metric(labels['ceramic_strength'], f"{results['ceramic_strength']:.1f} Н/м²")
                         
-                        # Показываем использованные точки
-                        with st.expander("🔍 Показать использованные экспериментальные точки"):
+                        with st.expander("Показать использованные экспериментальные точки"):
                             for prop, interp_data in filler_interp.items():
                                 if interp_data['points']:
                                     st.caption(f"**{labels.get(prop, prop)}:**")
                                     for p in interp_data['points']:
-                                        st.caption(f"  📍 {p['content']} phr + {p['silane']} phr силан → {p['value']:.2f}")
+                                        st.caption(f"  {p['content']} phr + {p['silane']} phr силан → {p['value']:.2f}")
                         
                         st.markdown('</div>', unsafe_allow_html=True)
                         
                 except Exception as e:
-                    st.error(f"❌ Ошибка расчета: {e}")
+                    st.error(f"Ошибка расчета: {e}")
 
 with tab2:
-    st.markdown('<p class="section-header">📊 Экспериментальные данные</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">Экспериментальные данные</p>', unsafe_allow_html=True)
     st.dataframe(data_df, use_container_width=True)
     
     csv = data_df.to_csv(index=False)
     st.download_button(
-        label="📥 Скачать данные (CSV)",
+        label="Скачать данные (CSV)",
         data=csv,
         file_name="experimental_data.csv",
         mime="text/csv"
@@ -373,6 +386,6 @@ with tab2:
 
 st.markdown("""
 <div class="footer">
-    🧪 Система прогнозирования свойств эластомерных материалов &bull; Версия 3.0
+    Система прогнозирования свойств эластомерных материалов &bull; Версия 3.1
 </div>
 """, unsafe_allow_html=True)
