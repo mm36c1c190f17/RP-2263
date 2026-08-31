@@ -64,19 +64,16 @@ st.caption("Модель прогнозирования на основе сос
 def load_models():
     try:
         models_dir = Path('models/')
-        st.info(f"📂 Поиск моделей в: {models_dir.absolute()}")
         
         if not models_dir.exists():
             return None, None, None, None, f"Папка models/ не существует"
         
         encoders_files = list(models_dir.glob('encoders_*.pkl'))
         if not encoders_files:
-            return None, None, None, None, f"Файлы encoders_*.pkl не найдены в {models_dir}"
+            return None, None, None, None, f"Файлы encoders_*.pkl не найдены"
         
         latest = max(encoders_files, key=lambda x: x.stat().st_mtime)
         timestamp = latest.stem.replace('encoders_', '')
-        
-        st.success(f"✅ Загружена модель: {timestamp}")
         
         encoders = joblib.load(f'models/encoders_{timestamp}.pkl')
         scaler = joblib.load(f'models/scaler_{timestamp}.pkl')
@@ -87,7 +84,17 @@ def load_models():
             if name not in ['encoders', 'scaler', 'feature_info']:
                 models[name] = joblib.load(f)
         
-        df = pd.read_csv('data/raw/experimental_data.csv')
+        # Пробуем загрузить данные
+        try:
+            df = pd.read_csv('data/raw/experimental_data.csv')
+        except:
+            # Если данных нет, создаем пустой DataFrame с нужными колонками
+            st.warning("⚠️ Данные не найдены, используется минимальный набор")
+            df = pd.DataFrame({
+                'filler_type': ['шпинель', 'волластонит', 'Al2O3'],
+                'filler_amount': [30, 30, 30],
+                'P_strength': [38.3, 98.8, 96.6]
+            })
         
         return models, encoders, scaler, df, None
     except Exception as e:
@@ -98,39 +105,33 @@ models, encoders, scaler, data_df, error = load_models()
 
 if error:
     st.error(f"❌ Ошибка загрузки моделей:\n{error}")
-    
-    # Показываем содержимое папки для отладки
-    st.subheader("📂 Содержимое папки models/")
-    try:
-        import os
-        files = os.listdir('models/')
-        for f in sorted(files):
-            st.code(f)
-    except:
-        st.warning("Не удалось прочитать папку models/")
-    
     st.stop()
 
 if models is None:
     st.warning("⚠️ Модели не загружены")
     st.stop()
 
-st.success(f"✅ Загружено {len(models)} моделей на основе {len(data_df)} записей")
+st.success(f"✅ Загружено {len(models)} моделей")
 
 # Интерфейс
 st.sidebar.title("📊 Управление")
-st.sidebar.write(f"📈 Всего записей: {len(data_df)}")
-st.sidebar.write(f"🏷️ Наполнители: {', '.join(data_df['filler_type'].unique())}")
+if data_df is not None and len(data_df) > 0:
+    st.sidebar.write(f"📈 Всего записей: {len(data_df)}")
+    st.sidebar.write(f"🏷️ Наполнители: {', '.join(data_df['filler_type'].unique())}")
 
 tab1, tab2, tab3 = st.tabs(["🔮 Предсказание", "📈 Визуализация", "📋 Данные"])
 
 with tab1:
     st.header("🔮 Предсказание свойств")
     
+    if data_df is not None and len(data_df) > 0:
+        fillers = sorted(data_df['filler_type'].unique())
+    else:
+        fillers = ['шпинель', 'волластонит', 'Al2O3', 'SiO2', 'CaO']
+    
     col1, col2 = st.columns(2)
     
     with col1:
-        fillers = sorted(data_df['filler_type'].unique())
         filler_type = st.selectbox("Тип наполнителя", fillers)
         amount = st.slider("Дозировка наполнителя (масс. частей)", 10, 100, 30, 5)
         silane = st.slider("Содержание силана (масс. частей)", 0, 10, 0, 1)
@@ -174,28 +175,43 @@ with tab1:
                     
                     col3, col4 = st.columns(2)
                     with col3:
-                        st.metric("🔄 Прочность до старения", f"{results['fp_before']:.2f} МПа")
-                        st.metric("📏 Удлинение до старения", f"{results['ep_before']:.0f} %")
-                        st.metric("🔥 Прочность после старения", f"{results['fp_after']:.2f} МПа")
+                        if 'fp_before' in results:
+                            st.metric("🔄 Прочность до старения", f"{results['fp_before']:.2f} МПа")
+                        if 'ep_before' in results:
+                            st.metric("📏 Удлинение до старения", f"{results['ep_before']:.0f} %")
+                        if 'fp_after' in results:
+                            st.metric("🔥 Прочность после старения", f"{results['fp_after']:.2f} МПа")
                     with col4:
-                        st.metric("📐 Удлинение после старения", f"{results['ep_after']:.0f} %")
-                        st.metric("⚡ Уд. сопротивление до воды", f"{results['rho_before']:.2e} Ом·м")
-                        st.metric("🏺 Прочность керамического остатка", f"{results['P_strength']:.1f} Н/м²")
+                        if 'ep_after' in results:
+                            st.metric("📐 Удлинение после старения", f"{results['ep_after']:.0f} %")
+                        if 'rho_before' in results:
+                            st.metric("⚡ Уд. сопротивление до воды", f"{results['rho_before']:.2e} Ом·м")
+                        if 'P_strength' in results:
+                            st.metric("🏺 Прочность керамического остатка", f"{results['P_strength']:.1f} Н/м²")
                         
                 except Exception as e:
                     st.error(f"Ошибка: {e}")
 
 with tab2:
     st.header("📈 Визуализация данных")
-    if data_df is not None:
-        param = st.selectbox("Выберите параметр", ['P_strength', 'fp_before', 'ep_before', 'fp_after', 'ep_after'])
-        fig = px.scatter(data_df, x='filler_amount', y=param, color='filler_type', 
-                        title=f'Зависимость {param} от дозировки')
-        st.plotly_chart(fig, use_container_width=True)
+    if data_df is not None and len(data_df) > 0:
+        try:
+            param = st.selectbox("Выберите параметр", 
+                                ['P_strength', 'fp_before', 'ep_before', 'fp_after', 'ep_after'])
+            fig = px.scatter(data_df, x='filler_amount', y=param, color='filler_type',
+                            title=f'Зависимость {param} от дозировки')
+            st.plotly_chart(fig, use_container_width=True)
+        except:
+            st.info("Нет данных для визуализации")
+    else:
+        st.info("Нет данных для визуализации")
 
 with tab3:
-    st.header("📋 Все данные")
-    st.dataframe(data_df, use_container_width=True)
+    st.header("📋 Данные")
+    if data_df is not None and len(data_df) > 0:
+        st.dataframe(data_df, use_container_width=True)
+    else:
+        st.info("Нет данных для отображения")
 
 st.markdown("""
 <div class="footer">
