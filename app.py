@@ -6,7 +6,7 @@ import joblib
 from pathlib import Path
 
 st.set_page_config(
-    page_title="Прогнозирование свойств резин",
+    page_title="Прогнозирование свойств эластомерных материалов",
     page_icon="⚙️",
     layout="wide"
 )
@@ -23,7 +23,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Прогнозирование свойств резин")
+st.title("Прогнозирование свойств эластомерных материалов")
 st.caption("Система прогнозирования на основе машинного обучения")
 
 @st.cache_resource
@@ -31,14 +31,15 @@ def load_model():
     try:
         model = CatBoostRegressor()
         model.load_model('models/catboost_predictor.cbm')
-        cat_features = joblib.load('models/catboost_features.pkl')
+        feature_names = joblib.load('models/feature_names.pkl')
+        cat_features = joblib.load('models/cat_features.pkl')
         df = pd.read_csv('data/raw/experimental_data.csv')
-        return model, cat_features, df
+        return model, feature_names, cat_features, df
     except Exception as e:
         st.error(f"Ошибка загрузки модели: {e}")
-        return None, None, None
+        return None, None, None, None
 
-model, cat_features, data_df = load_model()
+model, feature_names, cat_features, data_df = load_model()
 
 if model is None:
     st.warning("Модель не загружена")
@@ -70,25 +71,34 @@ with tab1:
         if st.button("Рассчитать свойства", use_container_width=True):
             with st.spinner("Выполняется расчет..."):
                 try:
+                    # Создаем данные в правильном порядке
                     input_data = pd.DataFrame([{
                         'base_type': 'VMQ',
-                        'base_hardness': 70,
                         'base_manufacturer': 'Xiameter',
                         'filler_type': filler_type,
                         'filler_manufacturer': 'JSC_Vostochnye_Ogneupory',
-                        'silane_type': '0',
+                        'silane_type': 'A-1120' if silane_content > 0 else '0',
+                        'base_hardness': 70,
+                        'filler_content': filler_content,
                         'silane_content': silane_content,
                         'temp': 115,
                         'time': 15
                     }])
+                    
+                    # Убеждаемся, что колонки в правильном порядке
+                    input_data = input_data[feature_names]
                     
                     pred = model.predict(input_data)[0]
                     
                     st.success("✅ Расчет выполнен")
                     st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
                     
+                    # Дополнительная информация
+                    st.info(f"Модель обучена на {len(data_df)} экспериментальных образцах")
+                    
                 except Exception as e:
                     st.error(f"Ошибка расчета: {e}")
+                    st.info("Проверьте правильность введенных данных")
 
 with tab2:
     st.markdown('<p class="section-header">Экспериментальные данные</p>', unsafe_allow_html=True)
@@ -104,6 +114,6 @@ with tab2:
 
 st.markdown("""
 <div class="footer">
-    Система прогнозирования свойств резин &bull; Версия 2.2 &bull; Алгоритм: CatBoost
+    Система прогнозирования свойств эластомерных материалов &bull; Версия 2.2 &bull; Алгоритм: CatBoost
 </div>
 """, unsafe_allow_html=True)

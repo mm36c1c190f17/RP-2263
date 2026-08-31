@@ -14,28 +14,31 @@ print("=" * 60)
 df = pd.read_csv('data/raw/experimental_data.csv')
 print(f"✅ Загружено {len(df)} записей")
 
-# Кодируем категориальные признаки
+# Определяем колонки
 cat_features = ['base_type', 'base_manufacturer', 'filler_type', 'filler_manufacturer', 'silane_type']
 num_features = ['base_hardness', 'filler_content', 'silane_content', 'temp', 'time']
 
-X = df[cat_features + num_features]
+# Все колонки в правильном порядке
+feature_names = cat_features + num_features
+
+X = df[feature_names]
 y = df['ceramic_strength']
 
-# Заполняем пропуски в числовых признаках
+# Заполняем пропуски
 for col in num_features:
     X[col] = X[col].fillna(X[col].mean())
 
-# Разделяем на train/test
+# Разделяем
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 print(f"📊 Train: {len(X_train)} записей, Test: {len(X_test)} записей")
 
-# Обучаем CatBoost с параметрами для малых данных
+# Обучаем
 model = CatBoostRegressor(
-    iterations=100,
-    learning_rate=0.3,
+    iterations=200,
+    learning_rate=0.1,
     depth=4,
-    l2_leaf_reg=3,
+    l2_leaf_reg=5,
     random_seed=42,
     verbose=50,
     loss_function='RMSE'
@@ -61,36 +64,13 @@ print(f"\n📊 Результаты:")
 print(f"  Train R²: {train_r2:.4f}, RMSE: {train_rmse:.2f}")
 print(f"  Test R²: {test_r2:.4f}, RMSE: {test_rmse:.2f}")
 
-# Сохраняем модель
+# Сохраняем
 models_dir = Path('models/')
 models_dir.mkdir(exist_ok=True)
 
 model.save_model('models/catboost_predictor.cbm')
-joblib.dump(cat_features, 'models/catboost_features.pkl')
+joblib.dump(feature_names, 'models/feature_names.pkl')
+joblib.dump(cat_features, 'models/cat_features.pkl')
 
-print("\n✅ Модель сохранена как catboost_predictor.cbm")
-
-# Проверка предсказаний для известных составов
-print("\n🔮 Проверка на известных составах:")
-test_cases = [
-    ('MgAl2O4', 30, 0, 38.3),
-    ('CaSiO3', 30, 0, 98.8),
-    ('Al2O3', 30, 0, 96.6),
-    ('SiO2', 30, 0, 71.6),
-]
-
-for filler, content, silane, real in test_cases:
-    test_data = pd.DataFrame([{
-        'base_type': 'VMQ',
-        'base_hardness': 70,
-        'base_manufacturer': 'Xiameter',
-        'filler_type': filler,
-        'filler_manufacturer': 'JSC_Vostochnye_Ogneupory',
-        'silane_type': '0',
-        'silane_content': silane,
-        'temp': 115,
-        'time': 15
-    }])
-    
-    pred = model.predict(test_data)[0]
-    print(f"  {filler} {content} phr + {silane} phr: реальное={real:.1f}, предсказанное={pred:.1f}")
+print("\n✅ Модель сохранена")
+print(f"   Порядок колонок: {feature_names}")
