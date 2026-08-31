@@ -1,47 +1,51 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+from catboost import CatBoostRegressor
 import joblib
 from pathlib import Path
 
 st.set_page_config(
-    page_title="RubberAI - Прогнозирование свойств резин",
+    page_title="Прогнозирование свойств резин",
     page_icon="⚙️",
     layout="wide"
 )
 
 st.markdown("""
 <style>
-    .main { background-color: #f5f5f5; }
-    h1 { font-weight: 300; font-size: 2rem; color: #2d2d2d; border-bottom: 2px solid #d0d0d0; padding-bottom: 0.5rem; }
-    .stButton > button { background-color: #2d2d2d; color: #ffffff; border: none; border-radius: 2px; padding: 0.6rem 2rem; font-weight: 400; width: 100%; }
-    .stButton > button:hover { background-color: #1a1a1a; }
-    [data-testid="metric-container"] { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 2px; padding: 1rem 0.5rem; }
-    [data-testid="metric-container"] label { font-weight: 400; color: #555555; font-size: 0.8rem; }
-    .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e0e0e0; font-size: 0.75rem; color: #999999; text-align: center; }
-    .section-header { color: #2d2d2d; font-weight: 400; font-size: 1.2rem; border-bottom: 1px solid #e0e0e0; padding-bottom: 0.3rem; margin-bottom: 1rem; }
+    .main { background-color: #f8f9fa; }
+    h1 { font-weight: 300; font-size: 2rem; color: #1a1a2e; border-bottom: 3px solid #4361ee; padding-bottom: 0.5rem; }
+    .stButton > button { background-color: #4361ee; color: #ffffff; border: none; border-radius: 4px; padding: 0.6rem 2rem; font-weight: 500; width: 100%; }
+    .stButton > button:hover { background-color: #3a56d4; box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); }
+    [data-testid="metric-container"] { background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border: 1px solid #e9ecef; border-radius: 8px; padding: 1.2rem 0.5rem; }
+    .footer { margin-top: 3rem; padding-top: 1rem; border-top: 2px solid #4361ee; font-size: 0.75rem; color: #6c757d; text-align: center; }
+    .section-header { color: #1a1a2e; font-weight: 500; font-size: 1.3rem; border-bottom: 2px solid #4361ee; padding-bottom: 0.3rem; margin-bottom: 1.5rem; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("RubberAI - Прогнозирование свойств резин")
+st.title("Прогнозирование свойств резин")
+st.caption("Система прогнозирования на основе машинного обучения")
 
 @st.cache_resource
-def load_models():
+def load_model():
     try:
-        lookup_table = joblib.load('models/lookup_table.pkl')
+        model = CatBoostRegressor()
+        model.load_model('models/catboost_predictor.cbm')
+        cat_features = joblib.load('models/catboost_features.pkl')
         df = pd.read_csv('data/raw/experimental_data.csv')
-        return lookup_table, df
+        return model, cat_features, df
     except Exception as e:
-        st.error(f"Ошибка загрузки: {e}")
-        return None, None
+        st.error(f"Ошибка загрузки модели: {e}")
+        return None, None, None
 
-lookup_table, data_df = load_models()
+model, cat_features, data_df = load_model()
 
-if lookup_table is None:
-    st.warning("Таблица поиска не загружена")
+if model is None:
+    st.warning("Модель не загружена")
     st.stop()
 
 st.sidebar.markdown("### Управление")
-st.sidebar.write(f"**Записей:** {len(data_df)}")
+st.sidebar.write(f"**Записей для обучения:** {len(data_df)}")
 st.sidebar.write(f"**Наполнителей:** {len(data_df['filler_type'].unique())}")
 
 tab1, tab2 = st.tabs(["Прогнозирование", "Данные"])
@@ -58,39 +62,36 @@ with tab1:
         silane_content = st.number_input("Содержание силана (phr)", min_value=0, max_value=10, value=0, step=1)
     
     with col2:
-        st.markdown("### Состав")
-        st.write(f"**Каучук:** VMQ (Xiameter)")
-        st.write(f"**Наполнитель:** {filler_type}")
-        st.write(f"**Дозировка:** {filler_content} phr")
-        st.write(f"**Силан:** {silane_content} phr")
+        st.markdown("### Состав композиции")
+        st.info(f"**Каучук:** VMQ (Xiameter, твердость 70)")
+        st.info(f"**Наполнитель:** {filler_type} ({filler_content} phr)")
+        st.info(f"**Силан:** {silane_content} phr")
         
-        if st.button("Найти свойства"):
-            key = (filler_type, filler_content, silane_content)
-            
-            if key in lookup_table:
-                results = lookup_table[key]
-                st.success("Данные найдены")
-                
-                col3, col4 = st.columns(2)
-                with col3:
-                    if results.get('strength_initial') is not None:
-                        st.metric("Прочность начальная", f"{results['strength_initial']:.2f} МПа")
-                    if results.get('elongation_initial') is not None:
-                        st.metric("Удлинение начальное", f"{results['elongation_initial']:.0f} %")
-                    if results.get('strength_aged_240h_250C') is not None:
-                        st.metric("Прочность 240ч/250°C", f"{results['strength_aged_240h_250C']:.2f} МПа")
-                with col4:
-                    if results.get('elongation_aged_240h_250C') is not None:
-                        st.metric("Удлинение 240ч/250°C", f"{results['elongation_aged_240h_250C']:.0f} %")
-                    if results.get('ceramic_strength') is not None:
-                        st.metric("Прочность керамического остатка", f"{results['ceramic_strength']:.1f} Н/м²")
-                    if results.get('resistivity') is not None:
-                        st.metric("Удельное сопротивление", f"{results['resistivity']:.2e} Ом·м")
-            else:
-                st.warning("Данные для этого состава не найдены в базе")
+        if st.button("Рассчитать свойства", use_container_width=True):
+            with st.spinner("Выполняется расчет..."):
+                try:
+                    input_data = pd.DataFrame([{
+                        'base_type': 'VMQ',
+                        'base_hardness': 70,
+                        'base_manufacturer': 'Xiameter',
+                        'filler_type': filler_type,
+                        'filler_manufacturer': 'JSC_Vostochnye_Ogneupory',
+                        'silane_type': '0',
+                        'silane_content': silane_content,
+                        'temp': 115,
+                        'time': 15
+                    }])
+                    
+                    pred = model.predict(input_data)[0]
+                    
+                    st.success("✅ Расчет выполнен")
+                    st.metric("Прочность керамического остатка", f"{pred:.1f} Н/м²")
+                    
+                except Exception as e:
+                    st.error(f"Ошибка расчета: {e}")
 
 with tab2:
-    st.markdown('<p class="section-header">Данные</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">Экспериментальные данные</p>', unsafe_allow_html=True)
     st.dataframe(data_df, use_container_width=True)
     
     csv = data_df.to_csv(index=False)
@@ -103,6 +104,6 @@ with tab2:
 
 st.markdown("""
 <div class="footer">
-    RubberAI v2.0 &bull; Алгоритм: таблица поиска
+    Система прогнозирования свойств резин &bull; Версия 2.2 &bull; Алгоритм: CatBoost
 </div>
 """, unsafe_allow_html=True)
