@@ -22,13 +22,13 @@ def get_image_base64(image_path):
 
 logo_base64 = get_image_base64("static/logo.png")
 
-# Цветной дизайн с градиентным фоном
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     .stApp {
         background: linear-gradient(135deg, #e0e7ff 0%, #f0e6ff 50%, #fce4ec 100%);
+        background-attachment: fixed;
     }
     
     .main {
@@ -180,22 +180,62 @@ st.markdown("""
         border-color: #667eea !important;
     }
     
+    /* Улучшенные вкладки */
+    .stTabs {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        margin-bottom: 1rem;
+    }
+    
     .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
-        background-color: rgba(255, 255, 255, 0.5);
+        gap: 4px;
+        background: transparent;
         border-radius: 12px;
         padding: 4px;
-        backdrop-filter: blur(10px);
     }
+    
     .stTabs [data-baseweb="tab"] {
-        border-radius: 10px;
-        padding: 8px 16px;
+        border-radius: 12px;
+        padding: 12px 32px;
         font-weight: 500;
+        font-size: 1rem;
         color: #4a5568;
+        transition: all 0.3s ease;
+        background: transparent;
+        border: none;
+        margin: 0;
     }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(255, 255, 255, 0.5);
+        color: #2d3748;
+    }
+    
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: #ffffff !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+    }
+    
+    .stTabs [data-baseweb="tab-highlight"] {
+        display: none !important;
+    }
+    
+    .stTabs [data-baseweb="tab-border"] {
+        display: none !important;
+    }
+    
+    .stTabs [role="tabpanel"] {
+        padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        margin-top: 0.5rem;
+        backdrop-filter: blur(5px);
     }
 </style>
 """, unsafe_allow_html=True)
