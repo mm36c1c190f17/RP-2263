@@ -1,0 +1,128 @@
+{
+  "timestamp": "20260831_105107",
+  "config": {
+    "data": {
+      "raw_file": "data/raw/experimental_data.csv",
+      "processed_file": "data/processed/experimental_data_processed.csv",
+      "features": {
+        "categorical": [
+          "filler_type",
+          "manufacturer",
+          "rubber_type"
+        ],
+        "numerical": [
+          "silane_content",
+          "filler_amount"
+        ]
+      },
+      "targets": [
+        "fp_before",
+        "ep_before",
+        "fp_after",
+        "ep_after",
+        "rho_before",
+        "rho_after",
+        "P_strength"
+      ]
+    },
+    "model": {
+      "type": "random_forest",
+      "params": {
+        "n_estimators": 100,
+        "max_depth": 10,
+        "random_state": 42,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1
+      }
+    },
+    "training": {
+      "test_size": 0.2,
+      "random_state": 42,
+      "cross_validation": 5
+    },
+    "output": {
+      "models_dir": "models/",
+      "plots_dir": "plots/",
+      "predictions_file": "predictions.csv"
+    },
+    "logging": {
+      "level": "INFO",
+      "file": "training.log"
+    }
+  },
+  "results": {
+    "fp_before": {
+      "train_r2": 0.9345411663066974,
+      "train_rmse": 0.3077511169760349,
+      "test_r2": 0.4468339506172767,
+      "test_rmse": 0.6693762021464504,
+      "cv_mean": NaN,
+      "cv_std": NaN
+    },
+    "ep_before": {
+      "train_r2": 0.9248518072289156,
+      "train_rmse": 21.62862686348813,
+      "test_r2": 0.8482159999999999,
+      "test_rmse": 9.739866528859626,
+      "cv_mean": NaN,
+      "cv_std": NaN
+    },
+    "fp_after": {
+      "train_r2": 0.9581654916512031,
+      "train_rmse": 0.11871394189395339,
+      "test_r2": -0.6657777777778779,
+      "test_rmse": 0.19359752064528668,
+      "cv_mean": NaN,
+      "cv_std": NaN
+    },
+    "ep_after": {
+      "train_r2": 0.9113958402662229,
+      "train_rmse": 7.297335130032059,
+      "test_r2": -2.419368000000002,
+      "test_rmse": 9.245766598827815,
+      "cv_mean": NaN,
+      "cv_std": NaN
+    },
+    "rho_before": {
+      "train_r2": 0.8872342857142858,
+      "train_rmse": 496663870238.2125,
+      "test_r2": -5.392899999999999,
+      "test_rmse": 2528418478021.3896,
+      "cv_mean": NaN,
+      "cv_std": NaN
+    },
+    "rho_after": {
+      "train_r2": 0.9273018867924528,
+      "train_rmse": 98145300447.8564,
+      "test_r2": -10531.9794,
+      "test_rmse": 5131515224570.614,
+      "cv_mean": NaN,
+      "cv_std": NaN
+    },
+    "P_strength": {
+      "train_r2": 0.8561124324324323,
+      "train_rmse": 11.170384953080182,
+      "test_r2": -92.1961888888889,
+      "test_rmse": 144.8072598318192,
+      "cv_mean": NaN,
+      "cv_std": NaN
+    }
+  },
+  "n_samples": 6,
+  "features": [
+    "filler_type_encoded",
+    "manufacturer_encoded",
+    "rubber_type_encoded",
+    "silane_content",
+    "filler_amount"
+  ],
+  "targets": [
+    "fp_before",
+    "ep_before",
+    "fp_after",
+    "ep_after",
+    "rho_before",
+    "rho_after",
+    "P_strength"
+  ]
+}

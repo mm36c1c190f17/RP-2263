@@ -1,0 +1,121 @@
+{
+  "timestamp": "20260831_114616",
+  "config": {
+    "data": {
+      "raw_file": "data/raw/experimental_data.csv",
+      "processed_file": "data/processed/experimental_data_processed.csv",
+      "features": {
+        "categorical": [
+          "filler_type",
+          "manufacturer",
+          "rubber_type"
+        ],
+        "numerical": [
+          "silane_content",
+          "filler_amount"
+        ]
+      },
+      "targets": [
+        "fp_before",
+        "ep_before",
+        "fp_after",
+        "ep_after",
+        "rho_before",
+        "rho_after",
+        "P_strength"
+      ]
+    },
+    "model": {
+      "type": "random_forest",
+      "params": {
+        "n_estimators": 100,
+        "max_depth": 10,
+        "random_state": 42,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1
+      }
+    },
+    "training": {
+      "test_size": 0.2,
+      "random_state": 42,
+      "cross_validation": 5
+    },
+    "output": {
+      "models_dir": "models/",
+      "plots_dir": "plots/",
+      "predictions_file": "predictions.csv"
+    },
+    "logging": {
+      "level": "INFO",
+      "file": "training.log"
+    }
+  },
+  "results": {
+    "fp_before": {
+      "train_r2": 0.8654718158347663,
+      "train_rmse": 0.37276355329708405,
+      "test_r2": 0.5181848849945214,
+      "test_rmse": 0.9081889946481422,
+      "n_samples": 19
+    },
+    "ep_before": {
+      "train_r2": 0.8784700443786981,
+      "train_rmse": 22.609334355526705,
+      "test_r2": 0.19987740141557075,
+      "test_rmse": 39.782439593368345,
+      "n_samples": 19
+    },
+    "fp_after": {
+      "train_r2": 0.8221176046442835,
+      "train_rmse": 0.4623924018983587,
+      "test_r2": 0.4699478873239398,
+      "test_rmse": 0.5312746464871084,
+      "n_samples": 19
+    },
+    "ep_after": {
+      "train_r2": 0.8048080839164582,
+      "train_rmse": 19.723988102477318,
+      "test_r2": 0.6401258953323905,
+      "test_rmse": 19.938616426422367,
+      "n_samples": 19
+    },
+    "rho_before": {
+      "train_r2": 0.8110640163000356,
+      "train_rmse": 6410304255233.652,
+      "test_r2": -36.726390802242996,
+      "test_rmse": 15883804282664.781,
+      "n_samples": 19
+    },
+    "rho_after": {
+      "train_r2": 0.8363814266798691,
+      "train_rmse": 6318753580745.705,
+      "test_r2": 0.12045296286861706,
+      "test_rmse": 13507911829872.15,
+      "n_samples": 19
+    },
+    "P_strength": {
+      "train_r2": 0.9368066204381376,
+      "train_rmse": 18.727075448843213,
+      "test_r2": -2.3902585149052875,
+      "test_rmse": 76.78275686799736,
+      "n_samples": 19
+    }
+  },
+  "n_samples": 19,
+  "features": [
+    "filler_type_encoded",
+    "manufacturer_encoded",
+    "rubber_type_encoded",
+    "silane_content",
+    "filler_amount"
+  ],
+  "targets": [
+    "fp_before",
+    "ep_before",
+    "fp_after",
+    "ep_after",
+    "rho_before",
+    "rho_after",
+    "P_strength"
+  ]
+}

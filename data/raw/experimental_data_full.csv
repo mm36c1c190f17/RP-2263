@@ -1,0 +1,16 @@
+base_type,base_hardness,base_manufacturer,filler_type,filler_content,filler_manufacturer,silane_content,temp,time,strength_initial,elongation_initial,strength_aged_240h_250C,elongation_aged_240h_250C,strength_aged_72h_250C,elongation_aged_72h_250C,resistivity,permittivity,tan_delta,dielectric_strength,ceramic_strength
+VMQ,70,Xiameter,CaO,30,OOO_NPO_EkoTek,0,115,15,8.9,370,6.1,150,5.4,140,4.4E+13,3.2,0.009,24.2,30
+VMQ,70,Xiameter,Al(OH)3,30,JSC_Geokom,0,115,15,7.3,360,5.3,170,4.1,140,2.4E+13,3.2,0.013,23.8,0
+VMQ,70,Xiameter,MgAl2O4,30,JSC_Vostochnye_Ogneupory,0,115,15,8.3,350,4.3,100,5.2,80,4.2E+13,2.9,0.001,23.5,38.3
+VMQ,70,Xiameter,CaMg(CO3)2,30,JSC_Geokom,0,115,15,6.8,340,5.0,220,4.6,180,5.0E+10,4.2,0.027,12.1,80
+VMQ,70,Xiameter,Mg3Si4O10(OH)2,30,JSC_Geokom,0,115,15,7.1,320,3.9,140,4.1,60,2.9E+11,3.1,0.013,26.1,88.3
+VMQ,70,Xiameter,SiO2,30,OOO_Promsilikat,0,115,15,8.0,314,5.8,175,5.9,175,4.7E+13,3.0,0.004,26.4,71.6
+VMQ,70,Xiameter,Al2Si2O5(OH)4,30,JSC_Geokom,0,115,15,7.9,280,5.2,50,4.3,90,2.8E+13,3.0,0.007,28.9,96.6
+VMQ,70,Xiameter,Al2O3,30,OOO_Almatis_Group,0,115,15,6.7,250,5.7,180,6.6,200,4.0E+13,3.1,0.003,25.3,96.6
+VMQ,70,Xiameter,CaSiO3,30,JSC_Geokom,0,115,15,9.2,230,7.1,150,5.8,120,4.6E+13,3.1,0.007,28.7,98.8
+VMQ,70,Xiameter,MgAl2O4,40,JSC_Vostochnye_Ogneupory,5,115,15,8.0,350,,,,,4.2E+13,,,,95
+VMQ,70,Xiameter,MgAl2O4,41,JSC_Vostochnye_Ogneupory,0,115,15,6.2,400,,,,,4.0E+13,,,,65
+VMQ,70,Xiameter,CaSiO3,42,JSC_Geokom,5,115,15,8.0,350,,,,,4.3E+13,,,,250
+VMQ,70,Xiameter,CaSiO3,43,JSC_Geokom,0,115,15,7.1,440,,,,,4.1E+13,,,,215
+VMQ,70,Xiameter,Al2O3,44,OOO_Almatis_Group,5,115,15,5.7,230,,,,,5.4E+13,,,,230
+VMQ,70,Xiameter,Al2O3,45,OOO_Almatis_Group,0,115,15,4.9,280,,,,,5.3E+13,,,,170
