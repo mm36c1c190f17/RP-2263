@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import joblib
-from pathlib import Path
+import numpy as np
+from scipy.interpolate import interp1d
 import base64
 
 st.set_page_config(
@@ -78,7 +78,7 @@ if logo_base64:
     <div class="header-container">
         <div>
             <div class="header-title">Прогнозирование свойств эластомерных материалов</div>
-            <div style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Система прогнозирования на основе экспериментальных данных</div>
+            <div style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Система прогнозирования на основе интерполяции экспериментальных данных</div>
         </div>
         <img src="data:image/png;base64,{logo_base64}" class="header-logo" />
     </div>
@@ -110,7 +110,7 @@ with tab1:
     with col1:
         fillers = sorted(data_df['filler_type'].unique())
         filler_type = st.selectbox("Тип наполнителя", fillers)
-        filler_content = st.number_input("Дозировка (phr)", min_value=10, max_value=50, value=30, step=1)
+        filler_content = st.number_input("Дозировка (phr)", min_value=10, max_value=50, value=35, step=1)
         silane_content = st.number_input("Силан (phr)", min_value=0, max_value=10, value=0, step=1)
     
     with col2:
@@ -119,90 +119,68 @@ with tab1:
         st.info(f"**Силан:** {silane_content} phr")
         
         if st.button("🚀 Рассчитать", use_container_width=True):
-            # Ищем точное совпадение
-            result = data_df[
-                (data_df['filler_type'] == filler_type) & 
-                (data_df['filler_content'] == filler_content) & 
-                (data_df['silane_content'] == silane_content)
-            ]
+            # Получаем данные для этого наполнителя
+            filler_data = data_df[data_df['filler_type'] == filler_type]
             
-            if len(result) > 0:
-                st.success("✅ Найдено в базе данных")
-                row = result.iloc[0]
-                
-                # Показываем все доступные свойства
-                labels = {
-                    'ceramic_strength': 'Прочность керамического остатка',
-                    'strength_initial': 'Прочность начальная',
-                    'elongation_initial': 'Удлинение начальное',
-                    'strength_aged_240h_250C': 'Прочность 240ч/250°C',
-                    'elongation_aged_240h_250C': 'Удлинение 240ч/250°C',
-                    'strength_aged_72h_250C': 'Прочность 72ч/250°C',
-                    'elongation_aged_72h_250C': 'Удлинение 72ч/250°C',
-                    'resistivity': 'Удельное сопротивление',
-                    'permittivity': 'Диэлектрическая проницаемость',
-                    'tan_delta': 'Тангенс угла потерь',
-                    'dielectric_strength': 'Диэлектрическая прочность'
-                }
-                
-                units = {
-                    'ceramic_strength': 'Н/м²',
-                    'strength_initial': 'МПа',
-                    'elongation_initial': '%',
-                    'strength_aged_240h_250C': 'МПа',
-                    'elongation_aged_240h_250C': '%',
-                    'strength_aged_72h_250C': 'МПа',
-                    'elongation_aged_72h_250C': '%',
-                    'resistivity': 'Ом·м',
-                    'permittivity': '',
-                    'tan_delta': '',
-                    'dielectric_strength': 'кВ/мм'
-                }
-                
-                formats = {
-                    'ceramic_strength': '{:.1f}',
-                    'strength_initial': '{:.2f}',
-                    'elongation_initial': '{:.0f}',
-                    'strength_aged_240h_250C': '{:.2f}',
-                    'elongation_aged_240h_250C': '{:.0f}',
-                    'strength_aged_72h_250C': '{:.2f}',
-                    'elongation_aged_72h_250C': '{:.0f}',
-                    'resistivity': '{:.2e}',
-                    'permittivity': '{:.3f}',
-                    'tan_delta': '{:.4f}',
-                    'dielectric_strength': '{:.1f}'
-                }
-                
-                st.subheader("Результаты")
-                
-                # Сначала показываем керамическую прочность
-                if pd.notna(row.get('ceramic_strength')):
-                    st.metric(labels['ceramic_strength'], f"{row['ceramic_strength']:.1f} Н/м²")
-                
-                # Остальные свойства в 2 колонки
-                cols = st.columns(2)
-                other_props = [p for p in labels.keys() if p != 'ceramic_strength']
-                for i, prop in enumerate(other_props):
-                    if prop in row and pd.notna(row[prop]):
-                        fmt = formats.get(prop, '{:.2f}')
-                        unit = units.get(prop, '')
-                        with cols[i % 2]:
-                            st.metric(labels[prop], f"{fmt.format(row[prop])} {unit}")
+            if len(filler_data) == 0:
+                st.error(f"Нет данных для {filler_type}")
             else:
-                st.warning("⚠️ Данные для этого состава не найдены")
+                # Группируем по силану
+                same_silane = filler_data[filler_data['silane_content'] == silane_content]
                 
-                # Показываем ближайшие составы
-                st.caption("Ближайшие известные составы:")
-                nearby = data_df[data_df['filler_type'] == filler_type]
-                if len(nearby) > 0:
-                    for _, row in nearby.iterrows():
-                        st.caption(f"  {row['filler_content']} phr + {row['silane_content']} phr силан → {row['ceramic_strength']:.1f} Н/м²")
+                # Если есть точки с таким же силаном - используем их
+                if len(same_silane) >= 2:
+                    use_data = same_silane
+                else:
+                    use_data = filler_data
+                
+                # Сортируем по дозировке
+                use_data = use_data.sort_values('filler_content')
+                
+                if len(use_data) >= 2:
+                    # Интерполяция
+                    x = use_data['filler_content'].values
+                    y = use_data['ceramic_strength'].values
+                    
+                    try:
+                        interp = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                        predicted_value = float(interp(filler_content))
+                        
+                        st.success(f"✅ Расчет выполнен (интерполяция между {x.min():.0f} и {x.max():.0f} phr)")
+                        st.metric("Прочность керамического остатка", f"{predicted_value:.1f} Н/м²")
+                        
+                        # Показываем использованные точки
+                        st.caption("Использованные экспериментальные точки:")
+                        for i in range(len(use_data)):
+                            row = use_data.iloc[i]
+                            st.caption(f"  {row['filler_content']:.0f} phr + {row['silane_content']:.0f} phr силан → {row['ceramic_strength']:.1f} Н/м²")
+                        
+                        # Показываем график зависимости
+                        st.caption("Зависимость прочности от дозировки:")
+                        import matplotlib.pyplot as plt
+                        fig, ax = plt.subplots(figsize=(8, 4))
+                        ax.plot(x, y, 'o-', color='#667eea', linewidth=2, markersize=8)
+                        ax.axvline(x=filler_content, color='red', linestyle='--', label=f'Ваша дозировка: {filler_content} phr')
+                        ax.axhline(y=predicted_value, color='green', linestyle='--', alpha=0.5, label=f'Предсказание: {predicted_value:.1f}')
+                        ax.set_xlabel('Дозировка наполнителя (phr)')
+                        ax.set_ylabel('Прочность керамического остатка (Н/м²)')
+                        ax.set_title(f'Зависимость для {filler_type}')
+                        ax.grid(True, alpha=0.3)
+                        ax.legend()
+                        st.pyplot(fig)
+                        
+                    except Exception as e:
+                        st.error(f"Ошибка интерполяции: {e}")
+                else:
+                    # Только одна точка - показываем ее
+                    st.info(f"Только одна точка данных для {filler_type} при {silane_content} phr силана")
+                    st.metric("Прочность керамического остатка", f"{use_data.iloc[0]['ceramic_strength']:.1f} Н/м²")
 
 with tab2:
     st.dataframe(data_df, use_container_width=True)
 
 st.markdown("""
 <div class="footer">
-    Версия 3.4
+    Версия 3.5 - Интерполяция между экспериментальными точками
 </div>
 """, unsafe_allow_html=True)
